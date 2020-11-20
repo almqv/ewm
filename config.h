@@ -80,6 +80,8 @@ static const char *dmenucmd[] = { "dmenu_run", "-m", dmenumon, "-fn", dmenufont,
 static const char *roficmd[] = { "rofi", "-show", "drun", "-lines", "4", "-eh", "2", "-width", "100", "-padding", "800", "-opacity", "75", "-bw", "0", "-bc", bg_color, "-bg", bg_color, "-fg", text_color, "-hlbg", bg_color, "-hlfg", "#9575cd", "-font", "System Ubuntu Mono Display 18", "-theme", "onedark" };
 static const char *termcmd[]  = { "termite", NULL };
 
+static const char *betterlockscreencmd[] = { "betterlockscreen", "--lock" };
+
 static Key keys[] = {
 	/* modifier                     key        function        argument */
 	{ MODKEY,                       XK_d,      spawn,          {.v = roficmd } },
@@ -105,6 +107,7 @@ static Key keys[] = {
 	{ MODKEY,                       XK_period, focusmon,       {.i = +1 } },
 	{ MODKEY|ShiftMask,             XK_comma,  tagmon,         {.i = -1 } },
 	{ MODKEY|ShiftMask,             XK_period, tagmon,         {.i = +1 } },
+	{ MODKEY|ShiftMask,             XK_x,      spawn,          {.v = betterlockscreencmd}},
 	TAGKEYS(                        XK_1,                      0)
 	TAGKEYS(                        XK_2,                      1)
 	TAGKEYS(                        XK_3,                      2)
