@@ -20,8 +20,7 @@ static const char text_color[]			= "#f3f4f5";
 static const char inactive_text_color[]		= "#676E7D";
 static const char urgent_bg_color[]		= "#E53935";
 static const char indicator_color[]		= "#474747";
-static const char border_selected_color[]       = "#ffffff21";
-static const char border_unselected_color[]     = "#00000021";
+static const char border_selected_color[]       = "#777777";
 
 static const char col_gray1[]       = "#222222";
 static const char col_gray2[]       = "#444444";
@@ -30,7 +29,7 @@ static const char col_gray4[]       = "#eeeeee";
 static const char col_cyan[]        = "#005577";
 static const char *colors[][3]      = {
 	/*               fg         bg         border   */
-	[SchemeNorm] = { col_gray3, col_gray1, border_unselected_color },
+	[SchemeNorm] = { col_gray3, col_gray1, col_gray2 },
 	[SchemeSel]  = { col_gray4, col_gray1, border_selected_color },
 };
 
