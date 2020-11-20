@@ -90,6 +90,8 @@ static const char *betterlockscreencmd[] = { "betterlockscreen", "--lock" };
 
 static const char *spectaclecmd[] = { "spectacle", "-r", "-c", "-b" };
 
+static const char *cmuspausecmd[] = { "cmus-remote", "--pause" };
+
 static Key keys[] = {
 	/* modifier                     key        function        argument */
 	{ MODKEY,                       XK_d,      spawn,          {.v = roficmd } },
@@ -117,6 +119,7 @@ static Key keys[] = {
 	{ MODKEY|ShiftMask,             XK_period, tagmon,         {.i = +1 } },
 	{ MODKEY|ShiftMask,             XK_x,      spawn,          {.v = betterlockscreencmd}},
 	{ MODKEY,                       XK_Print,  spawn,          {.v = spectaclecmd}},
+	{ MODKEY,                       XK_u,      spawn,          {.v = cmuspausecmd}},
 	TAGKEYS(                        XK_1,                      0)
 	TAGKEYS(                        XK_2,                      1)
 	TAGKEYS(                        XK_3,                      2)
