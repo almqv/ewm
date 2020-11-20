@@ -88,7 +88,7 @@ static const char *termcmd[]  = { "termite", NULL };
 
 static const char *betterlockscreencmd[] = { "betterlockscreen", "--lock" };
 
-static const char *spectaclecmd[] = { "spectacle", "-r", "-c", "-b", "&" };
+static const char *spectaclecmd[] = { "spectacle", "-r", "-c", "-b" };
 
 static Key keys[] = {
 	/* modifier                     key        function        argument */
