@@ -6,3 +6,4 @@ This is my version of dwm with applied patches. Feel free to use it but I recomm
  - anybar
  - IPC
  - fullgaps
+ - actualfullscreen
