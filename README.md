@@ -4,6 +4,16 @@ This is my version of dwm with applied patches. Feel free to use it but I recomm
 
 ## Features (patches)
  - anybar
+   Use any bar. Polybar is default here.
+ 
  - IPC
+   Allows for inter-process communication via a socket.
+   
  - fullgaps
+   Gaps between windows in tiled mode.
+   
  - actualfullscreen
+   Fullscreen windows with Super + Shift + f
+   
+ - spawncenter
+   Windows spawn in the center of the screen in floating mode.
