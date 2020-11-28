@@ -20,5 +20,5 @@ This is my version of dwm with applied patches. Feel free to use it but I recomm
  - **[actualfullscreen](https://dwm.suckless.org/patches/actualfullscreen/)**
    Fullscreen windows with Super + Shift + f
    
- - **[spawncenter][Custom]**
+ - **spawncenter**
    Windows spawn in the center of the screen in floating mode.
