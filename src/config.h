@@ -88,7 +88,7 @@ static const char *termcmd[]  = { "termite", NULL };
 
 static const char *betterlockscreencmd[] = { "betterlockscreen", "--lock", "blur" };
 
-static const char *spectaclecmd[] = { "spectacle", "-r", "-c", "-b" };
+static const char *spectaclecmd[] = { "spectacle", "-r", NULL, "-c", NULL, "-b", NULL };
 
 static const char *cmuspausecmd[] = { "cmus-remote", "--pause" };
 
