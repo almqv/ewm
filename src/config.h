@@ -2,15 +2,15 @@
 
 /* appearance */
 static const unsigned int borderpx  = 1;        /* border pixel of windows */
-static const unsigned int snap      = 0;       /* snap pixel (32)*/
+static const unsigned int snap      = 16;       /* snap pixel (32)*/
 static const unsigned int gappx     = 20;
 static const int showbar            = 1;        /* 0 means no bar */
 static const int topbar             = 1;        /* 0 means bottom bar */
 static const int usealtbar          = 1;        /* 1 means use non-dwm status bar */
 static const char *altbarclass      = "Polybar"; /* Alternate bar class name */
 static const char *alttrayname      = "tray";    /* Polybar tray instance name */
-static const char *altbarcmd        = "$HOME/.config/polybar/launch.sh"; /* Alternate bar launch command */
-static const char *fonts[]          = { "Ubuntu Mono:size=12" };
+static const char *altbarcmd        = "$HOME/.config/polybar/launch"; /* Alternate bar launch command */
+static const char *fonts[]          = { "Source Code Pro:size=10" };
 static const char dmenufont[]       = "monospace:size=10";
 
 static const char bg_color[]			= "#35383b";
@@ -20,8 +20,6 @@ static const char text_color[]			= "#f3f4f5";
 static const char inactive_text_color[]		= "#676E7D";
 static const char urgent_bg_color[]		= "#E53935";
 static const char indicator_color[]		= "#474747";
-static const char border_selected_color[]       = "#777777";
-static const char border_unselected_color[]     = "#000000";
 
 static const char col_gray1[]       = "#222222";
 static const char col_gray2[]       = "#444444";
@@ -30,8 +28,8 @@ static const char col_gray4[]       = "#eeeeee";
 static const char col_cyan[]        = "#005577";
 static const char *colors[][3]      = {
 	/*               fg         bg         border   */
-	[SchemeNorm] = { col_gray3, col_gray1, border_unselected_color },
-	[SchemeSel]  = { col_gray4, col_gray1, border_selected_color },
+	[SchemeNorm] = { col_gray3, col_gray1, col_gray2 },
+	[SchemeSel]  = { col_gray4, col_cyan, col_cyan },
 };
 
 /* static const char *colors[][3]      = { */
