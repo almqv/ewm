@@ -10,7 +10,8 @@ xrandr --output DP-0 --off --output DP-1 --off --output DP-2 --primary --mode 25
 $HOME/.config/picom/launch &
 
 # Background
-nitrogen --restore &
+# nitrogen --restore &
+wal -R
 
 # Anti sleep
 xset s off &
