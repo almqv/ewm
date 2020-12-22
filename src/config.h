@@ -13,7 +13,6 @@ static const char *altbarcmd        = "$HOME/.config/polybar/launch"; /* Alterna
 static const char *fonts[]          = { "Source Code Pro:size=10" };
 static const char dmenufont[]       = "monospace:size=10";
 
-/*
 static const char bg_color[]			= "#35383b";
 static const char bg_color_bar[]		= "#151515";
 static const char inactive_bg_color[]		= "#272727";
@@ -27,20 +26,18 @@ static const char col_gray2[]       = "#444444";
 static const char col_gray3[]       = "#bbbbbb";
 static const char col_gray4[]       = "#eeeeee";
 static const char col_cyan[]        = "#005577";
-static const char *colors[][3]      = { */
+static const char *colors[][3]      = {
 	/*               fg         bg         border   */
-/*
 	[SchemeNorm] = { col_gray3, col_gray1, col_gray2 },
 	[SchemeSel]  = { col_gray4, col_cyan, col_cyan },
 };
-*/
+
 /* static const char *colors[][3]      = { */
 /* 	/\*               fg         bg         border   *\/ */
 /* 	[SchemeNorm] = { text_color, bg_color_bar, bg_color }, */
 /* 	[SchemeSel]  = { text_color, col_cyan,  col_cyan  }, */
 /* }; */
 
-#include "/home/elal/.cache/wal/colors-wal-dwm.h"
 
 /* tagging */
 static const char *tags[] = { "1", "2", "3", "4", "5", "6", "7", "8", "9" };
