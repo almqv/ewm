@@ -81,7 +81,6 @@ static char dmenumon[2] = "0"; /* component of dmenucmd, manipulated in spawn() 
 
 static const char *dmenucmd[] = { "dmenu_run", "-m", dmenumon, "-fn", dmenufont, "-nb", bg_color, "-nf", text_color, "-sb", col_cyan, "-sf", col_gray4, NULL };
 
-static const char *roficmd[] = { "rofi", "-show", "drun", "-lines", "4", "-eh", "2", "-width", "100", "-padding", "800", "-opacity", "75", "-bw", "0", "-bc", bg_color, "-bg", bg_color, "-fg", text_color, "-hlbg", bg_color, "-hlfg", "#9575cd", "-font", "System Ubuntu Mono Display 18", "-theme", "onedark" };
 static const char *termcmd[]  = { "urxvt", NULL };
 
 static const char *betterlockscreencmd[] = { "betterlockscreen", "--lock", "blur" };
