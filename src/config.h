@@ -13,10 +13,10 @@ static const char *altbarcmd        = "$HOME/.config/polybar/launch"; /* Alterna
 static const char *fonts[]          = { "Source Code Pro:size=10" };
 static const char dmenufont[]       = "monospace:size=10";
 
-static const char bg_color[]			= "#35383b";
-static const char bg_color_bar[]		= "#151515";
+static const char bg_color[]			= "#111015";
+static const char bg_color_bar[]		= "#111015";
 static const char inactive_bg_color[]		= "#272727";
-static const char text_color[]			= "#f3f4f5";
+static const char text_color[]			= "#d8dee9";
 static const char inactive_text_color[]		= "#676E7D";
 static const char urgent_bg_color[]		= "#E53935";
 static const char indicator_color[]		= "#474747";
@@ -82,7 +82,7 @@ static char dmenumon[2] = "0"; /* component of dmenucmd, manipulated in spawn() 
 static const char *dmenucmd[] = { "dmenu_run", "-m", dmenumon, "-fn", dmenufont, "-nb", col_gray1, "-nf", col_gray3, "-sb", col_cyan, "-sf", col_gray4, NULL };
 
 static const char *roficmd[] = { "rofi", "-show", "drun", "-lines", "4", "-eh", "2", "-width", "100", "-padding", "800", "-opacity", "75", "-bw", "0", "-bc", bg_color, "-bg", bg_color, "-fg", text_color, "-hlbg", bg_color, "-hlfg", "#9575cd", "-font", "System Ubuntu Mono Display 18", "-theme", "onedark" };
-static const char *termcmd[]  = { "termite", NULL };
+static const char *termcmd[]  = { "urxvt", NULL };
 
 static const char *betterlockscreencmd[] = { "betterlockscreen", "--lock", "blur" };
 
