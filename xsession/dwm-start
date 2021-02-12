@@ -10,8 +10,8 @@ $HOME/.screenlayout/layout.sh &
 $HOME/.config/picom/launch &
 
 # Background
-# nitrogen --restore &
-wal -R
+nitrogen --restore &
+# wal -R
 
 # Anti sleep
 xset s off &
