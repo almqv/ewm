@@ -7,11 +7,13 @@ static const unsigned int gappx     = 20;
 static const int showbar            = 1;        /* 0 means no bar */
 static const int topbar             = 1;        /* 0 means bottom bar */
 static const int usealtbar          = 1;        /* 1 means use non-dwm status bar */
+
 static const char *altbarclass      = "Polybar"; /* Alternate bar class name */
 static const char *alttrayname      = "tray";    /* Polybar tray instance name */
 static const char *altbarcmd        = "$HOME/.config/polybar/launch"; /* Alternate bar launch command */
-static const char *fonts[]          = { "Source Code Pro:size=10" };
-static const char dmenufont[]       = "Source Code Pro:size=12";
+
+static const char *fonts[]          = { "Fira Code:size=10" };
+static const char dmenufont[]       = "Fira Code:size=11";
 
 static const char bg_color[]			= "#111015";
 static const char bg_color_bar[]		= "#111015";
@@ -29,16 +31,9 @@ static const char col_gray4[]       = "#eeeeee";
 static const char col_cyan[]        = "#5f819d";
 static const char *colors[][3]      = {
 	/*               fg         bg         border   */
-	[SchemeNorm] = { col_gray3, col_gray1, col_gray1 },
+	[SchemeNorm] = { col_gray3, bg_color_bar, col_gray1 },
 	[SchemeSel]  = { col_gray4, col_cyan,  selected_color },
 };
-
-/* static const char *colors[][3]      = { */
-/* 	/\*               fg         bg         border   *\/ */
-/* 	[SchemeNorm] = { text_color, bg_color_bar, bg_color }, */
-/* 	[SchemeSel]  = { text_color, col_cyan,  col_cyan  }, */
-/* }; */
-
 
 /* tagging */
 static const char *tags[] = { "1", "2", "3", "4", "5", "6", "7", "8", "9" };
