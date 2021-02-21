@@ -115,6 +115,7 @@ static Key keys[] = {
 	{ MODKEY|ShiftMask,             XK_x,      spawn,          {.v = betterlockscreencmd}},
 	{ MODKEY,                       XK_Print,  spawn,          {.v = spectaclecmd}},
 	{ MODKEY,                       XK_u,      spawn,          {.v = cmuspausecmd}},
+	{ MODKEY,                       XK_g,      setgaps,        {.v = cmuspausecmd}},
 	TAGKEYS(                        XK_1,                      0)
 	TAGKEYS(                        XK_2,                      1)
 	TAGKEYS(                        XK_3,                      2)
