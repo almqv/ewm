@@ -4,7 +4,7 @@ This is my version of dwm with applied patches. Feel free to use it but I recomm
 
 ## Installation
  1. `git clone https://github.com/E-Almqvist/dwm.git`
- 2. `cd dwm/src & make install`
+ 2. `cd dwm/src && make install`
  3. [Check out the XSession installation](xsession/)
 
 ## Features (patches)
