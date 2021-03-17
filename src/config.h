@@ -80,11 +80,11 @@ static const char *dmenucmd[] = { "dmenu_run", "-m", dmenumon, "-fn", dmenufont,
 
 static const char *termcmd[]  = { "st", NULL };
 
-static const char *betterlockscreencmd[] = { "betterlockscreen", "--lock", "blur" };
+static const char *betterlockscreencmd[] = { "betterlockscreen", "--lock", "blur", NULL };
 
 static const char *spectaclecmd[] = { "spectacle", "-r", "-c", "-b", NULL };
 
-static const char *cmuspausecmd[] = { "cmus-remote", "--pause" };
+static const char *cmuspausecmd[] = { "cmus-remote", "--pause", NULL };
 
 static Key keys[] = {
 	/* modifier                     key        function        argument */
