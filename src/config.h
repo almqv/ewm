@@ -1,7 +1,7 @@
 /* See LICENSE file for copyright and license details. */
 
 /* appearance */
-static const unsigned int borderpx  = 1;        /* border pixel of windows */
+static const unsigned int borderpx  = 2;        /* border pixel of windows */
 static const unsigned int snap      = 16;       /* snap pixel (32)*/
 static const unsigned int gappx     = 40;
 static const int showbar            = 1;        /* 0 means no bar */
@@ -17,9 +17,9 @@ static const char dmenufont[]       = "Fira Code:size=11";
 
 static const char bg_color[]			= "#111015";
 static const char bg_color_bar[]		= "#111015";
-static const char inactive_bg_color[]		= "#272727";
+static const char inactive_bg_color[]	= "#272727";
 static const char text_color[]			= "#d8dee9";
-static const char inactive_text_color[]		= "#676E7D";
+static const char inactive_text_color[]	= "#676E7D";
 static const char urgent_bg_color[]		= "#E53935";
 static const char indicator_color[]		= "#474747";
 static const char selected_color[]		= "#81a2be";
