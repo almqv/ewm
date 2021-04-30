@@ -13,7 +13,7 @@ static const char *alttrayname      = "tray";    /* Polybar tray instance name *
 static const char *altbarcmd        = "$HOME/.config/polybar/launch"; /* Alternate bar launch command */
 
 static const char *fonts[]          = { "Fira Code:size=10" };
-static const char dmenufont[]       = "Fira Code:size=11";
+static const char dmenufont[]       = "Fira Code:size=12";
 
 static const char bg_color[]			= "#111015";
 static const char bg_color_bar[]		= "#111015";
