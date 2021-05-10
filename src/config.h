@@ -6,12 +6,12 @@ static const unsigned int snap      = 16;       /* snap pixel (32)*/
 static const unsigned int gappx     = 40;
 static const int showbar            = 1;        /* 0 means no bar */
 static const int topbar             = 1;        /* 0 means bottom bar */
-static const int usealtbar          = 1;        /* 1 means use non-dwm status bar */
+static const int usealtbar          = 0;        /* 1 means use non-dwm status bar */
 
 static const char *altbarclass      = "Polybar"; /* Alternate bar class name */
 static const char *alttrayname      = "tray";    /* Polybar tray instance name */
-static const char *altbarcmd        = "$HOME/.config/polybar/launch"; /* Alternate bar launch command */
-
+static const char *altbarcmd        = ""; /* Alternate bar launch command */
+/*$HOME/.config/polybar/launch*/
 static const char *fonts[]          = { "Fira Code:size=10" };
 static const char dmenufont[]       = "Fira Code:size=12";
 
@@ -74,16 +74,11 @@ static const Layout layouts[] = {
 #define SHCMD(cmd) { .v = (const char*[]){ "/bin/sh", "-c", cmd, NULL } }
 
 /* commands */
-
 static char dmenumon[2] = "0"; /* component of dmenucmd, manipulated in spawn() */
-static const char *dmenucmd[] = { "dmenu_run", "-m", dmenumon, "-fn", dmenufont, "-nb", bg_color, "-nf", text_color, "-sb", col_cyan, "-sf", col_gray4, "-p", "Run:", "-i", NULL };
-
+static const char *dmenucmd[] = { "dmenu_run", "-m", dmenumon, "-fn", dmenufont, "-nb", bg_color, "-nf", text_color, "-sb", col_cyan, "-sf", col_gray4, "-p", ">", "-i", "-l", "4", NULL };
 static const char *termcmd[]  = { "st", NULL };
-
 static const char *betterlockscreencmd[] = { "betterlockscreen", "--lock", "blur", NULL };
-
 static const char *spectaclecmd[] = { "spectacle", "-r", "-c", "-b", NULL };
-
 static const char *cmuspausecmd[] = { "cmus-remote", "--pause", NULL };
 
 static Key keys[] = {
