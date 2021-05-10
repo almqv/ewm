@@ -6,12 +6,11 @@ static const unsigned int snap      = 16;       /* snap pixel (32)*/
 static const unsigned int gappx     = 40;
 static const int showbar            = 1;        /* 0 means no bar */
 static const int topbar             = 1;        /* 0 means bottom bar */
-static const int usealtbar          = 0;        /* 1 means use non-dwm status bar */
+static const int usealtbar          = 1;        /* 1 means use non-dwm status bar */
 
 static const char *altbarclass      = "Polybar"; /* Alternate bar class name */
 static const char *alttrayname      = "tray";    /* Polybar tray instance name */
-static const char *altbarcmd        = ""; /* Alternate bar launch command */
-/*$HOME/.config/polybar/launch*/
+static const char *altbarcmd        = "$HOME/.config/polybar/launch"; /* Alternate bar launch command */
 static const char *fonts[]          = { "Fira Code:size=10" };
 static const char dmenufont[]       = "Fira Code:size=12";
 
