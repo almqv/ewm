@@ -74,7 +74,7 @@ static const Layout layouts[] = {
 
 /* commands */
 static char dmenumon[2] = "0"; /* component of dmenucmd, manipulated in spawn() */
-static const char *dmenucmd[] = { "dmenu_run", "-m", dmenumon, "-fn", dmenufont, "-nb", bg_color, "-nf", text_color, "-sb", col_cyan, "-sf", col_gray4, "-p", ">", "-i", "-l", "4", NULL };
+static const char *dmenucmd[] = { "dmenu_run", "-m", dmenumon, "-p", "Run >", "-z", "512", NULL };
 static const char *termcmd[]  = { "st", NULL };
 static const char *betterlockscreencmd[] = { "betterlockscreen", "--lock", "blur", NULL };
 static const char *spectaclecmd[] = { "spectacle", "-r", "-c", "-b", NULL };
@@ -92,7 +92,7 @@ static Key keys[] = {
 	{ MODKEY,						XK_h,	   setmfact,	   {.f = -0.05} },
 	{ MODKEY,						XK_l,	   setmfact,	   {.f = +0.05} },
 	{ MODKEY|ShiftMask,				XK_Return, zoom,		   {0} },
-	{ MODKEY,						XK_Tab,    view,		   {0} },
+	{ MODKEY,						XK_Tab,	   view,		   {0} },
 	{ MODKEY|ShiftMask,				XK_q,	   killclient,	   {0} },
 	{ MODKEY,						XK_t,	   setlayout,	   {.v = &layouts[0]} },
 	{ MODKEY,						XK_f,	   setlayout,	   {.v = &layouts[1]} },
