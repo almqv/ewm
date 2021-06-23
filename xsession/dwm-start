@@ -11,7 +11,9 @@ $HOME/.config/picom/launch &
 
 # Background
 nitrogen --restore &
-# wal -R
+
+# conky
+$HOME/.config/conky/launch.sh &
 
 # Anti sleep
 xset s off &
