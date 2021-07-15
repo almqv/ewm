@@ -1841,10 +1841,10 @@ setgaps(const Arg *arg)
 void
 togglegaps(const Arg *arg)
 {
-	if (selmon->gappx == 0)
+	if ((selmon->gappx == 0) || (selmon->gappx == gappx2))
 		selmon->gappx = gappx;
 	else
-		selmon->gappx = 0;
+		selmon->gappx = gappx2;
 	arrange(selmon);
 }
 
