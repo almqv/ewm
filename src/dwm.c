@@ -1860,7 +1860,7 @@ switchgaps(const Arg *arg)
 	selmon->gapidx %= modeslen;
 
 	selmon->gappx = gapmodes[selmon->gapidx];
-	printf("####### GAPPX=%d GAPIDX=%d\n", selmon->gappx, selmon->gapidx);
+	fprintf(stderr, "####### GAPPX=%d GAPIDX=%d\n", selmon->gappx, selmon->gapidx);
 	arrange(selmon);
 }
 
