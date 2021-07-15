@@ -315,6 +315,8 @@ static Window root, wmcheckwin;
 /* configuration, allows nested code to access above variables */
 #include "config.h"
 
+const unsigned int modeslen = (const unsigned int)(sizeof(modeslen) / sizeof(const unsigned int));
+
 #ifdef VERSION
 #include "IPCClient.c"
 #include "yajl_dumps.c"
@@ -1854,9 +1856,10 @@ togglegaps(const Arg *arg)
 void
 switchgaps(const Arg *arg) 
 {
-	const unsigned int modeslen = (const unsigned int)(sizeof(modeslen) / sizeof(const unsigned int));
-	
 	selmon->gapidx = (selmon->gapidx + arg->i) % modeslen;
+
+	selmon->gappx = gapmodes[selmon->gapidx];
+	arrange(selmon);
 }
 
 void
