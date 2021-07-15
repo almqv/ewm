@@ -1841,7 +1841,7 @@ setgaps(const Arg *arg)
 void
 togglegaps(const Arg *arg)
 {
-	if ((selmon->gappx == 0) || (selmon->gappx == gappx2))
+	if (selmon->gappx == gappx2)
 		selmon->gappx = gappx;
 	else
 		selmon->gappx = gappx2;
