@@ -231,7 +231,7 @@ static void setfocus(Client *c);
 static void setfullscreen(Client *c, int fullscreen);
 static void setgaps(const Arg *arg);
 static void togglegaps(const Arg *arg);
-static void switchgaps(const unsigned int i);
+static void switchgaps(const Arg *arg);
 static void setlayout(const Arg *arg);
 static void setlayoutsafe(const Arg *arg);
 static void setmfact(const Arg *arg);
@@ -1852,9 +1852,11 @@ togglegaps(const Arg *arg)
 }
 
 void
-switchgaps(const unsigned int i) 
+switchgaps(const Arg *arg) 
 {
-	/*TODO: make it switch and stuff*/	
+	const unsigned int modeslen = (const unsigned int)(sizeof(modeslen) / sizeof(const unsigned int));
+	
+	selmon->gapidx = (selmon->gapidx + arg->i) % modeslen;
 }
 
 void
