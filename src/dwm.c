@@ -1856,9 +1856,11 @@ togglegaps(const Arg *arg)
 void
 switchgaps(const Arg *arg) 
 {
-	selmon->gapidx = (selmon->gapidx + arg->i) % modeslen;
+	selmon->gapidx += arg->i; 
+	selmon->gapidx %= modeslen;
 
 	selmon->gappx = gapmodes[selmon->gapidx];
+	printf("####### GAPPX=%d GAPIDX=%d\n", selmon->gappx, selmon->gapidx);
 	arrange(selmon);
 }
 
