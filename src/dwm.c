@@ -1854,7 +1854,7 @@ togglegaps(const Arg *arg)
 void
 switchgaps(const unsigned int i) 
 {
-
+	/*TODO: make it switch and stuff*/	
 }
 
 void
