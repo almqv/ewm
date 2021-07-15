@@ -230,6 +230,7 @@ static void setfocus(Client *c);
 static void setfullscreen(Client *c, int fullscreen);
 static void setgaps(const Arg *arg);
 static void togglegaps(const Arg *arg);
+static void switchgaps(const unsigned int i);
 static void setlayout(const Arg *arg);
 static void setlayoutsafe(const Arg *arg);
 static void setmfact(const Arg *arg);
@@ -696,6 +697,7 @@ createmon(void)
 	m->showbar = showbar;
 	m->topbar = topbar;
 	m->gappx = gappx;
+	m->gapidx = 0;
 	m->lt[0] = &layouts[0];
 	m->lt[1] = &layouts[1 % LENGTH(layouts)];
 	strncpy(m->ltsymbol, layouts[0].symbol, sizeof m->ltsymbol);
@@ -1846,6 +1848,12 @@ togglegaps(const Arg *arg)
 	else
 		selmon->gappx = gappx2;
 	arrange(selmon);
+}
+
+void
+switchgaps(const unsigned int i) 
+{
+
 }
 
 void
