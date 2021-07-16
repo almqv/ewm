@@ -4,7 +4,7 @@
 static const unsigned int borderpx	= 4;		/* border pixel of windows */
 static const unsigned int snap		= 16;		/* snap pixel (32)*/
 static const unsigned int gappx		= 0;
-static const unsigned int gappx2	= 40;
+static const unsigned int gapmodes[] = { gappx, 40, 80 };
 static const int showbar			= 1;		/* 0 means no bar */
 static const int topbar				= 0;		/* 0 means bottom bar */
 static const int usealtbar			= 1;		/* 1 means use non-dwm status bar */
@@ -126,7 +126,8 @@ static Key keys[] = {
 	{ MODKEY|ShiftMask,				XK_x,	   spawn,		   {.v = betterlockscreencmd} },
 	{ MODKEY,						XK_Print,  spawn,		   {.v = spectaclecmd} },
 	{ MODKEY,						XK_u,	   spawn,		   {.v = cmuspausecmd} },
-	{ MODKEY,						XK_g,	   togglegaps,	   {0} },
+	{ MODKEY,						XK_g,	   switchgaps,	   {.i = +1 } },
+	{ MODKEY,						XK_v,	   switchgaps,	   {.i = -1 } },
 	{ MODKEY,						XK_minus,  setgaps,		   {.i = -1 } },
 	{ MODKEY,						XK_plus,   setgaps,		   {.i = +1 } },
 	{ MODKEY|ShiftMask,				XK_equal,  setgaps,		   {.i = 0	} },

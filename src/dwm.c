@@ -137,6 +137,7 @@ struct Monitor {
 	int mx, my, mw, mh;   /* screen size */
 	int wx, wy, ww, wh;   /* window area  */
 	int gappx;            /* gaps between windows */
+	int gapidx;			  /* gap mode index */
 	unsigned int seltags;
 	unsigned int sellt;
 	unsigned int tagset[2];
@@ -229,7 +230,7 @@ static void setclientstate(Client *c, long state);
 static void setfocus(Client *c);
 static void setfullscreen(Client *c, int fullscreen);
 static void setgaps(const Arg *arg);
-static void togglegaps(const Arg *arg);
+static void switchgaps(const Arg *arg);
 static void setlayout(const Arg *arg);
 static void setlayoutsafe(const Arg *arg);
 static void setmfact(const Arg *arg);
@@ -696,6 +697,7 @@ createmon(void)
 	m->showbar = showbar;
 	m->topbar = topbar;
 	m->gappx = gappx;
+	m->gapidx = 0;
 	m->lt[0] = &layouts[0];
 	m->lt[1] = &layouts[1 % LENGTH(layouts)];
 	strncpy(m->ltsymbol, layouts[0].symbol, sizeof m->ltsymbol);
@@ -1839,12 +1841,11 @@ setgaps(const Arg *arg)
 }
 
 void
-togglegaps(const Arg *arg)
+switchgaps(const Arg *arg) 
 {
-	if (selmon->gappx == gappx2)
-		selmon->gappx = gappx;
-	else
-		selmon->gappx = gappx2;
+	selmon->gapidx = (selmon->gapidx + arg->i) % LENGTH(gapmodes); 
+	selmon->gappx = gapmodes[selmon->gapidx];
+
 	arrange(selmon);
 }
 
