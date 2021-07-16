@@ -1,5 +1,8 @@
 /* See LICENSE file for copyright and license details. */
 
+/* logging */
+static const char* logfile			= "/tmp/dwm.log";
+
 /* appearance */
 static const unsigned int borderpx	= 4;		/* border pixel of windows */
 static const unsigned int snap		= 16;		/* snap pixel (32)*/
