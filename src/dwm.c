@@ -1855,14 +1855,7 @@ void
 switchgaps(const Arg *arg) 
 {
 	selmon->gapidx = (selmon->gapidx + arg->i) % LENGTH(gapmodes); 
-	
-	FILE* logfile = NULL;
-	logfile = fopen("/tmp/dwm.log", "a");
-	
 	selmon->gappx = gapmodes[selmon->gapidx];
-	fprintf(logfile, "####### GAPPX=%d GAPIDX=%d mode=%d modeslen=%d\n", selmon->gappx, selmon->gapidx, gapmodes[selmon->gapidx], LENGTH(gapmodes));
-	
-	fclose(logfile);
 
 	arrange(selmon);
 }
