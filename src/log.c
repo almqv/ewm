@@ -6,11 +6,11 @@
 #include "config.h"
 #include "log.h" 
 
-void flog(char* fstr, ...) {
+void flog(char* str) {
 	FILE* fp;
 	fp = fopen(logfile, "a");
 
-	fprintf(fp, fstr, ...);
+	fprintf(fp, str);
 	
 	fclose(fp);
 }

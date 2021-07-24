@@ -3,7 +3,7 @@
 
 include config.mk
 
-SRC = drw.c dwm.c util.c log.c
+SRC = drw.c dwm.c util.c 
 OBJ = ${SRC:.c=.o}
 
 all: options dwm dwm-msg
