@@ -48,7 +48,7 @@ static const Rule rules[] = {
 	{ "Firefox",  NULL,		  NULL,		  1 << 8,		0,			 -1 },
 	{ "discord",  NULL,		  NULL,		  0,			1,			 -1 },
 	{ "Steam",	  NULL,		  NULL,		  0,			1,			 -1 },
-	{ "qemu",	  NULL,		  NULL,		  0,			1,			 -1 },
+	{ "Qemu-system-x86_64",	  NULL,		  NULL,		  0,			1,			 -1 },
 };
 
 /* layout(s) */
