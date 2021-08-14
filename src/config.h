@@ -48,7 +48,7 @@ static const Rule rules[] = {
 	{ "Firefox",  NULL,		  NULL,		  1 << 8,		0,			 -1 },
 	{ "discord",  NULL,		  NULL,		  0,			1,			 -1 },
 	{ "Steam",	  NULL,		  NULL,		  0,			1,			 -1 },
-	{ "qemu",	  NULL,		  NULL,		  0,			1,			 -1 },
+	{ "Qemu-system-x86_64",	  NULL,		  NULL,		  0,			1,			 -1 },
 };
 
 /* layout(s) */
@@ -77,7 +77,7 @@ static const Layout layouts[] = {
 /* commands */
 static char dmenumon[2] = "0"; /* component of dmenucmd, manipulated in spawn() */
 static const char *dmenucmd[] = { "dmenu_run", "-m", dmenumon, "-p", "Run >", "-z", "512", NULL };
-static const char *termcmd[]  = { "st", NULL };
+static const char *termcmd[]  = { "alacritty", NULL };
 static const char *betterlockscreencmd[] = { "betterlockscreen", "--lock", "blur", NULL };
 static const char *spectaclecmd[] = { "spectacle", "-r", "-c", "-b", NULL };
 static const char *cmuspausecmd[] = { "cmus-remote", "--pause", NULL };
