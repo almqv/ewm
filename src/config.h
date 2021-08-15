@@ -79,7 +79,7 @@ static char dmenumon[2] = "0"; /* component of dmenucmd, manipulated in spawn() 
 static const char *dmenucmd[] = { "dmenu_run", "-m", dmenumon, "-p", "Run >", "-z", "512", NULL };
 static const char *termcmd[]  = { "alacritty", NULL };
 static const char *betterlockscreencmd[] = { "betterlockscreen", "--lock", "blur", NULL };
-static const char *spectaclecmd[] = { "spectacle", "-r", "-c", "-b", NULL };
+static const char *screenshotcmd[] = { "flameshot", "gui", NULL };
 static const char *cmuspausecmd[] = { "cmus-remote", "--pause", NULL };
 
 static Key keys[] = {
@@ -125,7 +125,7 @@ static Key keys[] = {
 	{ MODKEY|ShiftMask,				XK_comma,  tagmon,		   {.i = -1 } },
 	{ MODKEY|ShiftMask,				XK_period, tagmon,		   {.i = +1 } },
 	{ MODKEY|ShiftMask,				XK_x,	   spawn,		   {.v = betterlockscreencmd} },
-	{ MODKEY,						XK_Print,  spawn,		   {.v = spectaclecmd} },
+	{ MODKEY,						XK_Print,  spawn,		   {.v = screenshotcmd} },
 	{ MODKEY,						XK_u,	   spawn,		   {.v = cmuspausecmd} },
 	{ MODKEY,						XK_g,	   switchgaps,	   {.i = +1 } },
 	{ MODKEY,						XK_v,	   switchgaps,	   {.i = -1 } },
