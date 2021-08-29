@@ -3,8 +3,8 @@
 /* appearance */
 static const unsigned int borderpx	= 4;		/* border pixel of windows */
 static const unsigned int snap		= 16;		/* snap pixel (32)*/
-static const unsigned int gappx		= 80;
-static const unsigned int gapmodes[] = { gappx, 40, 0 };
+static const unsigned int gappx		= 40;
+static const unsigned int gapmodes[] = { gappx, 0 };
 static const int showbar		= 1;		/* 0 means no bar */
 static const int topbar			= 1;		/* 0 means bottom bar */
 static const int usealtbar		= 1;		/* 1 means use non-dwm status bar */
@@ -32,7 +32,7 @@ static const char col_cyan[]		= "#5f819d";
 static const char *colors[][3]		= {
 	/*		fg		bg	   border	*/
 	[SchemeNorm] = { col_gray3, bg_color_bar, col_gray1 },
-	[SchemeSel]  = { col_gray4, col_cyan,  selected_color },
+	[SchemeSel]  = { col_gray4, col_cyan,  col_gray2},
 };
 
 /* tagging */
