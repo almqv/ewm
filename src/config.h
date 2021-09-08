@@ -1,7 +1,7 @@
 /* See LICENSE file for copyright and license details. */
 
 /* appearance */
-static const unsigned int borderpx	= 4;		/* border pixel of windows */
+static const unsigned int borderpx	= 2;		/* border pixel of windows */
 static const unsigned int snap		= 16;		/* snap pixel (32)*/
 static const unsigned int gappx		= 40;
 static const unsigned int gapmodes[] = { gappx, 0 };
@@ -32,7 +32,7 @@ static const char col_cyan[]		= "#5f819d";
 static const char *colors[][3]		= {
 	/*		fg		bg	   border	*/
 	[SchemeNorm] = { col_gray3, bg_color_bar, col_gray1 },
-	[SchemeSel]  = { col_gray4, col_cyan,  col_gray2},
+	[SchemeSel]  = { col_gray4, col_cyan,  col_cyan},
 };
 
 /* tagging */
