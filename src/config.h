@@ -15,8 +15,8 @@ static const char *altbarcmd		= "$HOME/.config/polybar/launch"; /* Alternate bar
 static const char *fonts[]		= { "Source Code Pro:size=10" };
 static const char dmenufont[]		= "Source Code Pro:size=12";
 
-static const char bg_color[]		= "#111015";
-static const char bg_color_bar[]	= "#111015";
+static const char bg_color[]		= "#0c1115";
+static const char bg_color_bar[]	= "#0c1115";
 static const char inactive_bg_color[]	= "#272727";
 static const char text_color[]		= "#d8dee9";
 static const char inactive_text_color[]	= "#676E7D";
