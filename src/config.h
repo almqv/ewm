@@ -1,10 +1,10 @@
 /* See LICENSE file for copyright and license details. */
 
 /* appearance */
-static const unsigned int borderpx	= 4;		/* border pixel of windows */
+static const unsigned int borderpx	= 2;		/* border pixel of windows */
 static const unsigned int snap		= 16;		/* snap pixel (32)*/
 static const unsigned int gappx		= 40;
-static const unsigned int gapmodes[] = { gappx, 0 };
+static const unsigned int gapmodes[] 	= { gappx, 0 };
 static const int showbar		= 1;		/* 0 means no bar */
 static const int topbar			= 1;		/* 0 means bottom bar */
 static const int usealtbar		= 1;		/* 1 means use non-dwm status bar */
@@ -12,11 +12,11 @@ static const int usealtbar		= 1;		/* 1 means use non-dwm status bar */
 static const char *altbarclass		= "Polybar"; /* Alternate bar class name */
 static const char *alttrayname		= "tray";	 /* Polybar tray instance name */
 static const char *altbarcmd		= "$HOME/.config/polybar/launch"; /* Alternate bar launch command */
-static const char *fonts[]		= { "monospace:size=10" };
-static const char dmenufont[]		= "monospace:size=12";
+static const char *fonts[]		= { "Source Code Pro:size=10" };
+static const char dmenufont[]		= "Source Code Pro:size=12";
 
-static const char bg_color[]		= "#111015";
-static const char bg_color_bar[]	= "#111015";
+static const char bg_color[]		= "#0c1115";
+static const char bg_color_bar[]	= "#0c1115";
 static const char inactive_bg_color[]	= "#272727";
 static const char text_color[]		= "#d8dee9";
 static const char inactive_text_color[]	= "#676E7D";
@@ -36,7 +36,7 @@ static const char *colors[][3]		= {
 };
 
 /* tagging */
-static const char *tags[] = { "1", "2", "3", "4", "5", "6", "7", "8", "9" };
+static const char *tags[] = { "o", "o", "o", "o", "o", "o", "o", "o", "o" };
 
 static const Rule rules[] = {
 	/* xprop(1):
@@ -76,7 +76,7 @@ static const Layout layouts[] = {
 
 /* commands */
 static char dmenumon[2] = "0"; /* component of dmenucmd, manipulated in spawn() */
-static const char *dmenucmd[] = { "dmenu_run", "-m", dmenumon, "-p", "Run >", "-z", "512", NULL };
+static const char *dmenucmd[] = { "dmenu_run", "-m", dmenumon, "-p", "$>", "-z", "512", NULL };
 static const char *termcmd[]  = { "alacritty", NULL };
 static const char *betterlockscreencmd[] = { "betterlockscreen", "--lock", "blur", NULL };
 static const char *screenshotcmd[] = { "flameshot", "gui", NULL };
