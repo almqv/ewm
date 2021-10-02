@@ -1,5 +1,9 @@
 #!/bin/sh
 
+# Keyring
+eval $(gnome-keyring-daemon --start)
+export SSH_AUTH_SOCK
+
 # Keyboard layout
 setxkbmap se &
 
