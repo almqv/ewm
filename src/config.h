@@ -1,7 +1,7 @@
 /* See LICENSE file for copyright and license details. */
 
 /* appearance */
-static const unsigned int borderpx	= 2;		/* border pixel of windows */
+static const unsigned int borderpx	= 1;		/* border pixel of windows */
 static const unsigned int snap		= 16;		/* snap pixel (32)*/
 static const unsigned int gappx		= 0;
 static const unsigned int gapmodes[] 	= { 0, 40 };
