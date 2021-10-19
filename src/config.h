@@ -1,22 +1,22 @@
 /* See LICENSE file for copyright and license details. */
 
 /* appearance */
-static const unsigned int borderpx	= 1;		/* border pixel of windows */
+static const unsigned int borderpx	= 4;		/* border pixel of windows */
 static const unsigned int snap		= 16;		/* snap pixel (32)*/
 static const unsigned int gappx		= 0;
 static const unsigned int gapmodes[] 	= { 0, 40 };
 static const int showbar		= 1;		/* 0 means no bar */
 static const int topbar			= 1;		/* 0 means bottom bar */
-static const int usealtbar		= 1;		/* 1 means use non-dwm status bar */
+static const int usealtbar		= 0;		/* 1 means use non-dwm status bar */
 
 static const char *altbarclass		= "Polybar"; /* Alternate bar class name */
 static const char *alttrayname		= "tray";	 /* Polybar tray instance name */
-static const char *altbarcmd		= "$HOME/.config/polybar/launch"; /* Alternate bar launch command */
+static const char *altbarcmd		= ""; /*"$HOME/.config/polybar/launch";*/ /* Alternate bar launch command */
 static const char *fonts[]		= { "Source Code Pro:size=10" };
 static const char dmenufont[]		= "Source Code Pro:size=12";
 
-static const char bg_color[]		= "#0c1115";
-static const char bg_color_bar[]	= "#0c1115";
+static const char bg_color[]		= "#282c34";
+static const char bg_color_bar[]	= "#282c34";
 static const char inactive_bg_color[]	= "#272727";
 static const char text_color[]		= "#d8dee9";
 static const char inactive_text_color[]	= "#676E7D";
@@ -32,7 +32,7 @@ static const char col_cyan[]		= "#5f819d";
 static const char *colors[][3]		= {
 	/*		fg		bg	   border	*/
 	[SchemeNorm] = { col_gray3, bg_color_bar, col_gray1 },
-	[SchemeSel]  = { col_gray4, col_cyan,  col_gray2},
+	[SchemeSel]  = { col_gray4, bg_color_bar, col_gray2 },
 };
 
 /* tagging */
