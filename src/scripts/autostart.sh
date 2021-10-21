@@ -1,3 +1,4 @@
 #!/bin/bash
 
-# dwmblocks > /tmp/dwmblocks.log &
+killall -9 dwmblocks
+dwmblocks > /tmp/dwmblocks.log &

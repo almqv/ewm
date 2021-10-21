@@ -1,6 +1,8 @@
 /* See LICENSE file for copyright and license details. */
 #include <X11/XF86keysym.h>
 
+#define STATUSBAR "dwmblocks"
+
 /* appearance */
 static const unsigned int borderpx	= 4;		/* border pixel of windows */
 static const unsigned int snap		= 16;		/* snap pixel (32)*/
