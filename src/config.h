@@ -83,15 +83,17 @@ static const char *betterlockscreencmd[] = { "betterlockscreen", "--lock", "blur
 static const char *screenshotcmd[] = { "flameshot", "gui", NULL };
 static const char *cmuspausecmd[] = { "cmus-remote", "--pause", NULL };
 
-static const char *mutecmd[] = { "pactl", "set-sink-mute", "0", "toggle", NULL };
-static const char *volupcmd[] = { "pactl", "set-sink-volume", "0", "+5%", NULL };
-static const char *voldowncmd[] = { "pactl", "set-sink-volume", "0", "-5%", NULL };
+static const char *mutecmd[] = { "amixer", "-q", "set", "Master", "toggle", NULL };
+static const char *volupcmd[] = { "amixer", "-q", "set", "Master", "5%+", "unmute", NULL };
+static const char *voldowncmd[] = { "amixer", "-q", "set", "Master", "5%-", "unmute", NULL };
+static const char *miccmd[] = { "amixer", "set", "Capture", "toggle", NULL };
 
 static Key keys[] = {
 	/* modifier						key			function			argument */
 	{ MODKEY,		 				XF86XK_AudioLowerVolume,  spawn, {.v = voldowncmd} },
 	{ MODKEY,		 				XF86XK_AudioRaiseVolume,  spawn, {.v = volupcmd} },
 	{ MODKEY,						XF86XK_AudioMute, spawn, {.v = mutecmd} },
+	{ MODKEY,						XK_Pause, spawn, {.v = miccmd} },
 	{ MODKEY,						XK_d,		spawn,			{.v = dmenucmd } },
 	{ MODKEY,						XK_Return, 	spawn,			{.v = termcmd } },
 	{ MODKEY,						XK_b,		togglebar,		{0} },
