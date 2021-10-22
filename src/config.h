@@ -95,7 +95,7 @@ static Key keys[] = {
 	{ MODKEY,		 				XF86XK_AudioLowerVolume,  spawn, {.v = voldowncmd} },
 	{ MODKEY,		 				XF86XK_AudioRaiseVolume,  spawn, {.v = volupcmd} },
 	{ MODKEY,						XF86XK_AudioMute, spawn, {.v = mutecmd} },
-	{ MODKEY,						XK_Pause, spawn, {.v = miccmd} },
+	{ MODKEY|ShiftMask,					XF86XK_AudioMute, spawn, {.v = miccmd} },
 	{ MODKEY,						XK_d,		spawn,			{.v = dmenucmd } },
 	{ MODKEY,						XK_Return, 	spawn,			{.v = termcmd } },
 	{ MODKEY,						XK_b,		togglebar,		{0} },
