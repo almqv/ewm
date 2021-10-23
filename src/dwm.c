@@ -29,6 +29,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <sys/wait.h>
 #include <sys/epoll.h>
 #include <X11/cursorfont.h>
@@ -50,7 +51,8 @@
 #define CLEANMASK(mask)         (mask & ~(numlockmask|LockMask) & (ShiftMask|ControlMask|Mod1Mask|Mod2Mask|Mod3Mask|Mod4Mask|Mod5Mask))
 #define INTERSECT(x,y,w,h,m)    (MAX(0, MIN((x)+(w),(m)->mx+(m)->mw) - MAX((x),(m)->mx)) \
                                * MAX(0, MIN((y)+(h),(m)->my+(m)->mh) - MAX((y),(m)->my)))
-#define ISVISIBLE(C)            ((C->tags & C->mon->tagset[C->mon->seltags]))
+#define ISVISIBLEONTAG(C, T)    ((C->tags & T))
+#define ISVISIBLE(C)            ISVISIBLEONTAG(C, C->mon->tagset[C->mon->seltags])
 #define LENGTH(X)               (sizeof X / sizeof X[0])
 #define MOUSEMASK               (BUTTONMASK|PointerMotionMask)
 #define WIDTH(X)                ((X)->w + 2 * (X)->bw)
@@ -170,6 +172,7 @@ static int applysizehints(Client *c, int *x, int *y, int *w, int *h, int interac
 static void arrange(Monitor *m);
 static void arrangemon(Monitor *m);
 static void attach(Client *c);
+static void attachtop(Client *c);
 static void attachstack(Client *c);
 static void buttonpress(XEvent *e);
 static void checkotherwm(void);
@@ -195,6 +198,7 @@ static void focusstack(const Arg *arg);
 static Atom getatomprop(Client *c, Atom prop);
 static int getrootptr(int *x, int *y);
 static long getstate(Window w);
+static pid_t getstatusbarpid();
 static int gettextprop(Window w, Atom atom, char *text, unsigned int size);
 static void grabbuttons(Client *c, int focused);
 static void grabkeys(void);
@@ -222,6 +226,7 @@ static void resizeclient(Client *c, int x, int y, int w, int h);
 static void resizemouse(const Arg *arg);
 static void restack(Monitor *m);
 static void run(void);
+static void runautostart(void);
 static void scan(void);
 static void scantray(void);
 static int sendevent(Client *c, Atom proto);
@@ -239,6 +244,7 @@ static void setupepoll(void);
 static void seturgent(Client *c, int urg);
 static void showhide(Client *c);
 static void sigchld(int unused);
+static void sigstatusbar(const Arg *arg);
 static void spawn(const Arg *arg);
 static void spawnbar();
 static void tag(const Arg *arg);
@@ -274,8 +280,15 @@ static int xerrorstart(Display *dpy, XErrorEvent *ee);
 static void zoom(const Arg *arg);
 
 /* variables */
+static const char autostartblocksh[] = "autostart_blocking.sh";
+static const char autostartsh[] = "autostart.sh";
 static const char broken[] = "broken";
+static const char dwmdir[] = "dwm";
+static const char localshare[] = ".local/share";
 static char stext[256];
+static int statusw;
+static int statussig;
+static pid_t statuspid = -1;
 static int screen;
 static int sw, sh;           /* X display screen geometry width, height */
 static int bh, blw = 0;      /* bar geometry */
@@ -456,6 +469,25 @@ attach(Client *c)
 }
 
 void
+attachtop(Client *c)
+{
+	int n;
+	Monitor *m = selmon;
+	Client *below;
+
+	for (n = 1, below = c->mon->clients;
+		below && below->next && (below->isfloating || !ISVISIBLEONTAG(below, c->tags) || n != m->nmaster);
+		n = below->isfloating || !ISVISIBLEONTAG(below, c->tags) ? n + 0 : n + 1, below = below->next);
+	c->next = NULL;
+	if (below) {
+		c->next = below->next;
+		below->next = c;
+	}
+	else
+		c->mon->clients = c;
+}
+
+void
 attachstack(Client *c)
 {
 	c->snext = c->mon->stack;
@@ -470,6 +502,7 @@ buttonpress(XEvent *e)
 	Client *c;
 	Monitor *m;
 	XButtonPressedEvent *ev = &e->xbutton;
+	char *text, *s, ch;
 
 	click = ClkRootWin;
 	/* focus monitor if necessary */
@@ -488,9 +521,23 @@ buttonpress(XEvent *e)
 			arg.ui = 1 << i;
 		} else if (ev->x < x + blw)
 			click = ClkLtSymbol;
-		else if (ev->x > selmon->ww - (int)TEXTW(stext))
+		else if (ev->x > selmon->ww - statusw) {
+			x = selmon->ww - statusw;
 			click = ClkStatusText;
-		else
+			statussig = 0;
+			for (text = s = stext; *s && x <= ev->x; s++) {
+				if ((unsigned char)(*s) < ' ') {
+					ch = *s;
+					*s = '\0';
+					x += TEXTW(text) - lrpad;
+					*s = ch;
+					text = s + 1;
+					if (x >= ev->x)
+						break;
+					statussig = ch;
+				}
+			}
+		} else
 			click = ClkWinTitle;
 	} else if ((c = wintoclient(ev->window))) {
 		focus(c);
@@ -771,9 +818,24 @@ drawbar(Monitor *m)
 
 	/* draw status first so it can be overdrawn by tags later */
 	if (m == selmon) { /* status is only drawn on selected monitor */
+		char *text, *s, ch;
 		drw_setscheme(drw, scheme[SchemeNorm]);
-		tw = TEXTW(stext) - lrpad + 2; /* 2px right padding */
-		drw_text(drw, m->ww - tw, 0, tw, bh, 0, stext, 0);
+
+		x = 0;
+		for (text = s = stext; *s; s++) {
+			if ((unsigned char)(*s) < ' ') {
+				ch = *s;
+				*s = '\0';
+				tw = TEXTW(text) - lrpad;
+				drw_text(drw, m->ww - statusw + x, 0, tw, bh, 0, text, 0);
+				x += tw;
+				*s = ch;
+				text = s + 1;
+			}
+		}
+		tw = TEXTW(text) - lrpad + 2;
+		drw_text(drw, m->ww - statusw + x, 0, tw, bh, 0, text, 0);
+		tw = statusw;
 	}
 
 	for (c = m->clients; c; c = c->next) {
@@ -937,6 +999,30 @@ getatomprop(Client *c, Atom prop)
 		XFree(p);
 	}
 	return atom;
+}
+
+pid_t
+getstatusbarpid()
+{
+	char buf[32], *str = buf, *c;
+	FILE *fp;
+
+	if (statuspid > 0) {
+		snprintf(buf, sizeof(buf), "/proc/%u/cmdline", statuspid);
+		if ((fp = fopen(buf, "r"))) {
+			fgets(buf, sizeof(buf), fp);
+			while ((c = strchr(str, '/')))
+				str = c + 1;
+			fclose(fp);
+			if (!strcmp(str, STATUSBAR))
+				return statuspid;
+		}
+	}
+	if (!(fp = popen("pidof -s "STATUSBAR, "r")))
+		return -1;
+	fgets(buf, sizeof(buf), fp);
+	pclose(fp);
+	return strtol(buf, NULL, 10);
 }
 
 int
@@ -1153,7 +1239,7 @@ manage(Window w, XWindowAttributes *wa)
 		c->isfloating = c->oldstate = trans != None || c->isfixed;
 	if (c->isfloating)
 		XRaiseWindow(dpy, c->win);
-	attach(c);
+	attachtop(c);
 	attachstack(c);
 	XChangeProperty(dpy, root, netatom[NetClientList], XA_WINDOW, 32, PropModeAppend,
 		(unsigned char *) &(c->win), 1);
@@ -1689,6 +1775,83 @@ run(void)
 }
 
 void
+runautostart(void)
+{
+	char *pathpfx;
+	char *path;
+	char *xdgdatahome;
+	char *home;
+	struct stat sb;
+
+	if ((home = getenv("HOME")) == NULL)
+		/* this is almost impossible */
+		return;
+
+	/* if $XDG_DATA_HOME is set and not empty, use $XDG_DATA_HOME/dwm,
+	 * otherwise use ~/.local/share/dwm as autostart script directory
+	 */
+	xdgdatahome = getenv("XDG_DATA_HOME");
+	if (xdgdatahome != NULL && *xdgdatahome != '\0') {
+		/* space for path segments, separators and nul */
+		pathpfx = ecalloc(1, strlen(xdgdatahome) + strlen(dwmdir) + 2);
+
+		if (sprintf(pathpfx, "%s/%s", xdgdatahome, dwmdir) <= 0) {
+			free(pathpfx);
+			return;
+		}
+	} else {
+		/* space for path segments, separators and nul */
+		pathpfx = ecalloc(1, strlen(home) + strlen(localshare)
+		                     + strlen(dwmdir) + 3);
+
+		if (sprintf(pathpfx, "%s/%s/%s", home, localshare, dwmdir) < 0) {
+			free(pathpfx);
+			return;
+		}
+	}
+
+	/* check if the autostart script directory exists */
+	if (! (stat(pathpfx, &sb) == 0 && S_ISDIR(sb.st_mode))) {
+		/* the XDG conformant path does not exist or is no directory
+		 * so we try ~/.dwm instead
+		 */
+		char *pathpfx_new = realloc(pathpfx, strlen(home) + strlen(dwmdir) + 3);
+		if(pathpfx_new == NULL) {
+			free(pathpfx);
+			return;
+		}
+		pathpfx = pathpfx_new;
+
+		if (sprintf(pathpfx, "%s/.%s", home, dwmdir) <= 0) {
+			free(pathpfx);
+			return;
+		}
+	}
+
+	/* try the blocking script first */
+	path = ecalloc(1, strlen(pathpfx) + strlen(autostartblocksh) + 2);
+	if (sprintf(path, "%s/%s", pathpfx, autostartblocksh) <= 0) {
+		free(path);
+		free(pathpfx);
+	}
+
+	if (access(path, X_OK) == 0)
+		system(path);
+
+	/* now the non-blocking script */
+	if (sprintf(path, "%s/%s", pathpfx, autostartsh) <= 0) {
+		free(path);
+		free(pathpfx);
+	}
+
+	if (access(path, X_OK) == 0)
+		system(strcat(path, " &"));
+
+	free(pathpfx);
+	free(path);
+}
+
+void
 scan(void)
 {
 	unsigned int i, num;
@@ -1750,7 +1913,7 @@ sendmon(Client *c, Monitor *m)
 	detachstack(c);
 	c->mon = m;
 	c->tags = m->tagset[m->seltags]; /* assign tags of target monitor */
-	attach(c);
+	attachtop(c);
 	attachstack(c);
 	focus(NULL);
 	arrange(NULL);
@@ -2031,6 +2194,20 @@ sigchld(int unused)
 }
 
 void
+sigstatusbar(const Arg *arg)
+{
+	union sigval sv;
+
+	if (!statussig)
+		return;
+	sv.sival_int = arg->i;
+	if ((statuspid = getstatusbarpid()) <= 0)
+		return;
+
+	sigqueue(statuspid, SIGRTMIN+statussig, sv);
+}
+
+void
 spawn(const Arg *arg)
 {
 	if (arg->v == dmenucmd)
@@ -2263,6 +2440,7 @@ updatebars(void)
 		.background_pixmap = ParentRelative,
 		.event_mask = ButtonPressMask|ExposureMask
 	};
+
 	XClassHint ch = {"dwm", "dwm"};
 	for (m = mons; m; m = m->next) {
 		if (m->barwin)
@@ -2353,7 +2531,7 @@ updategeom(void)
 					m->clients = c->next;
 					detachstack(c);
 					c->mon = mons;
-					attach(c);
+					attachtop(c);
 					attachstack(c);
 				}
 				if (m == selmon)
@@ -2443,8 +2621,25 @@ updatesizehints(Client *c)
 void
 updatestatus(void)
 {
-	if (!gettextprop(root, XA_WM_NAME, stext, sizeof(stext)))
+	if (!gettextprop(root, XA_WM_NAME, stext, sizeof(stext))) {
 		strcpy(stext, "dwm-"VERSION);
+		statusw = TEXTW(stext) - lrpad + 2;
+	} else {
+		char *text, *s, ch;
+
+		statusw  = 0;
+		for (text = s = stext; *s; s++) {
+			if ((unsigned char)(*s) < ' ') {
+				ch = *s;
+				*s = '\0';
+				statusw += TEXTW(text) - lrpad;
+				*s = ch;
+				text = s + 1;
+			}
+		}
+		statusw += TEXTW(text) - lrpad + 2;
+
+	}
 	drawbar(selmon);
 }
 
@@ -2628,6 +2823,7 @@ main(int argc, char *argv[])
 		die("pledge");
 #endif /* __OpenBSD__ */
 	scan();
+	runautostart();
 	run();
 	cleanup();
 	XCloseDisplay(dpy);
