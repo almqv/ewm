@@ -20,7 +20,7 @@ static const char *fonts[]		= { "Hack:size=10" };
 static const char dmenufont[]		= "Hack:size=12";
 
 static const char bg_color[]		= "#272a34";
-static const char text_color[]		= "#ffffff";
+static const char text_color[]		= "#efefef";
 static const char selected_color[]	= "#81a2be";
 static const char border_color[]	= "#aaaaaa";
 
