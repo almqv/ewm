@@ -5,7 +5,7 @@
 #define SHCMD(cmd) { .v = (const char*[]){ "/bin/sh", "-c", cmd, NULL } }
 
 /* appearance */
-static const unsigned int borderpx	= 0;		/* border pixel of windows */
+static const unsigned int borderpx	= 1;		/* border pixel of windows */
 static const unsigned int snap		= 16;		/* snap pixel (32)*/
 static const unsigned int gappx		= 0;
 static const unsigned int gapmodes[] 	= { 0, 64 };
