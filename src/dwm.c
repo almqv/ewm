@@ -2072,7 +2072,7 @@ setup(void)
 	if (!drw_fontset_create(drw, fonts, LENGTH(fonts)))
 		die("no fonts could be loaded.");
 	lrpad = drw->fonts->h;
-	bh = usealtbar ? 0 : drw->fonts->h + 5;
+	bh = usealtbar ? 0 : drw->fonts->h + barverticalpadding;
 	updategeom();
 	/* init atoms */
 	utf8string = XInternAtom(dpy, "UTF8_STRING", False);
