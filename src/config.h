@@ -16,8 +16,8 @@ static const int usealtbar		= 0;		/* 1 means use non-dwm status bar */
 static const char *altbarclass		= "Polybar"; /* Alternate bar class name */
 static const char *alttrayname		= "tray";	 /* Polybar tray instance name */
 static const char *altbarcmd		= ""; /*"$HOME/.config/polybar/launch";*/ /* Alternate bar launch command */
-static const char *fonts[]		= { "Hack:size=10" };
-static const char dmenufont[]		= "Hack:size=12";
+static const char *fonts[]		= { "Space Mono:size=10" };
+static const char dmenufont[]		= "Space Mono:size=12";
 
 static const char bg_color[]		= "#272a34";
 static const char text_color[]		= "#efefef";
