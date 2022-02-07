@@ -5,7 +5,7 @@
 #define SHCMD(cmd) { .v = (const char*[]){ "/bin/sh", "-c", cmd, NULL } }
 
 /* appearance */
-static const unsigned int borderpx	= 1;		/* border pixel of windows */
+static const unsigned int borderpx	= 2;		/* border pixel of windows */
 static const unsigned int snap		= 16;		/* snap pixel (32)*/
 static const unsigned int gappx		= 0;
 static const unsigned int gapmodes[] = { 0, 64 };
@@ -23,7 +23,8 @@ static const char dmenufont[]		= "Space Mono:size=12";
 static const char bg_color[]		= "#272a34";
 static const char text_color[]		= "#efefef";
 static const char selected_color[]	= "#81a2be";
-static const char border_color[]	= "#aaaaaa";
+static const char border_color[]	= "#cccccc";
+static const char border_color2[]	= "#1d1f21";
 
 static const char col_gray1[]		= "#222222";
 static const char col_gray2[]		= "#444444";
@@ -32,7 +33,7 @@ static const char col_gray4[]		= "#eeeeee";
 static const char col_cyan[]		= "#5f819d";
 static const char *colors[][3]		= {
 	/*		fg		bg		border	*/
-	[SchemeNorm] = { text_color, bg_color, bg_color },
+	[SchemeNorm] = { text_color, bg_color, border_color2 },
 	[SchemeSel]  = { selected_color, bg_color, border_color },
 };
 
