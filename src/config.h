@@ -3,7 +3,7 @@
 
 #define STATUSBAR "dwmblocks"
 /* appearance */
-static const unsigned int borderpx	= 0;			/* border pixel of windows */
+static const unsigned int borderpx	= 1;			/* border pixel of windows */
 static const unsigned int snap		= 16;			/* snap pixel (32)*/
 static const unsigned int gappx		= 1;
 static const unsigned int gapmodes[] = { 0, 64 };
@@ -18,7 +18,13 @@ static const char *altbarcmd		= ""; 			/*"$HOME/.config/polybar/launch";*/ /* Al
 static const char *fonts[]		= { "Space Mono:size=10" };
 static const char dmenufont[]		= "Space Mono:size=12";
 
-static const char bg_color[]		= "#272a34";
+static const char bg_alt_color[]		= "#272a34";
+static const char bg_color[]	= "#21242e";
+/*
+$bg_clr: #272a34
+$bg_alt_clr: #232730
+$bg_dark_clr: #21242e
+*/
 static const char text_color[]		= "#efefef";
 static const char selected_color[]	= "#81a2be";
 static const char border_color[]	= "#cccccc";
@@ -32,7 +38,7 @@ static const char col_cyan[]		= "#5f819d";
 static const char *colors[][3]		= {
 	/*		fg		bg		border	*/
 	[SchemeNorm] = { text_color, bg_color, border_color2 },
-	[SchemeSel]  = { selected_color, bg_color, border_color },
+	[SchemeSel]  = { selected_color, bg_alt_color, col_cyan },
 };
 
 /* tagging */
@@ -91,6 +97,7 @@ static Key keys[] = {
 	{ MODKEY|ShiftMask,				XF86XK_AudioMute, spawn, SHCMD("amixer set Capture toggle") },
 	{ MODKEY,						XK_d,		spawn,			{.v = dmenucmd } },
 	{ MODKEY,						XK_Return, 	spawn,			{.v = termcmd } },
+	{ MODKEY,						XK_e,	 	spawn,			{.v = browsercmd } },
 	{ MODKEY,						XK_b,		togglebar,		{0} },
 	{ MODKEY,						XK_j,		focusstack,		{.i = +1 } },
 	{ MODKEY,						XK_k,		focusstack,		{.i = -1 } },
