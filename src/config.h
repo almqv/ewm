@@ -2,21 +2,19 @@
 #include <X11/XF86keysym.h>
 
 #define STATUSBAR "dwmblocks"
-#define SHCMD(cmd) { .v = (const char*[]){ "/bin/sh", "-c", cmd, NULL } }
-
 /* appearance */
-static const unsigned int borderpx	= 0;		/* border pixel of windows */
-static const unsigned int snap		= 16;		/* snap pixel (32)*/
+static const unsigned int borderpx	= 0;			/* border pixel of windows */
+static const unsigned int snap		= 16;			/* snap pixel (32)*/
 static const unsigned int gappx		= 1;
 static const unsigned int gapmodes[] = { 0, 64 };
-static const int showbar			= 1;		/* 0 means no bar */
-static const int topbar				= 1;		/* 0 means bottom bar */
-static const int barverticalpadding = 6; /* Vertical bar padding  */
-static const int usealtbar			= 0; /* 1 means use non-dwm status bar */
+static const int showbar			= 1;			/* 0 means no bar */
+static const int topbar				= 1;			/* 0 means bottom bar */
+static const int barverticalpadding = 6; 			/* Vertical bar padding  */
+static const int usealtbar			= 0; 			/* 1 means use non-dwm status bar */
 
-static const char *altbarclass		= "Polybar"; /* Alternate bar class name */
-static const char *alttrayname		= "tray";	 /* Polybar tray instance name */
-static const char *altbarcmd		= ""; /*"$HOME/.config/polybar/launch";*/ /* Alternate bar launch command */
+static const char *altbarclass		= "Polybar";	/* Alternate bar class name */
+static const char *alttrayname		= "tray";		/* Polybar tray instance name */
+static const char *altbarcmd		= ""; 			/*"$HOME/.config/polybar/launch";*/ /* Alternate bar launch command */
 static const char *fonts[]		= { "Space Mono:size=10" };
 static const char dmenufont[]		= "Space Mono:size=12";
 
@@ -78,12 +76,12 @@ static const Layout layouts[] = {
 
 /* commands */
 static char dmenumon[2] = "0"; /* component of dmenucmd, manipulated in spawn() */
-static const char *dmenucmd[] = { "dmenu_run", "-m", dmenumon, "-p", "Run $", "-z", "512", NULL };
-static const char *termcmd[]  = { "alacritty", NULL };
-static const char *browsercmd[] = { "firefox", NULL };
-static const char *betterlockscreencmd[] = { "betterlockscreen", "--lock", "blur", NULL };
-static const char *screenshotcmd[] = { "flameshot", "gui", NULL };
-static const char *cmuspausecmd[] = { "cmus-remote", "--pause", NULL };
+static const char *dmenucmd[] =				{ "dmenu_run", "-m", dmenumon, "-p", "Run $", "-z", "512", NULL };
+static const char *termcmd[] = 				{ "alacritty", NULL };
+static const char *browsercmd[] =			{ "firefox", NULL };
+static const char *betterlockscreencmd[] =	{ "betterlockscreen", "--lock", "blur", NULL };
+static const char *screenshotcmd[] = 		{ "flameshot", "gui", NULL };
+static const char *cmuspausecmd[] = 		{ "cmus-remote", "--pause", NULL };
 
 static Key keys[] = {
 	/* modifier						key			function			argument */
