@@ -15,17 +15,17 @@ static const int usealtbar			= 0; 			/* 1 means use non-dwm status bar */
 static const char *altbarclass		= "Polybar";	/* Alternate bar class name */
 static const char *alttrayname		= "tray";		/* Polybar tray instance name */
 static const char *altbarcmd		= ""; 			/*"$HOME/.config/polybar/launch";*/ /* Alternate bar launch command */
-static const char *fonts[]		= { "Space Mono:size=10" };
-static const char dmenufont[]		= "Space Mono:size=12";
+static const char *fonts[]		= { "IBM Plex Mono:size=11" };
+static const char dmenufont[]		= "IBM Plex Mono:size=15";
 
 static const char bg_alt_color[]		= "#272a34";
-static const char bg_color[]	= "#21242e";
+static const char bg_color[]	= "#282c34";
 /*
 $bg_clr: #272a34
 $bg_alt_clr: #232730
 $bg_dark_clr: #21242e
 */
-static const char text_color[]		= "#efefef";
+static const char text_color[]		= "#bbc2cf";
 static const char selected_color[]	= "#81a2be";
 static const char border_color[]	= "#cccccc";
 static const char border_color2[]	= "#1d1f21";
@@ -35,10 +35,11 @@ static const char col_gray2[]		= "#444444";
 static const char col_gray3[]		= "#bbbbbb";
 static const char col_gray4[]		= "#eeeeee";
 static const char col_cyan[]		= "#5f819d";
+//static const char col_cyan[]		= "#51afef";
 static const char *colors[][3]		= {
 	/*		fg		bg		border	*/
 	[SchemeNorm] = { text_color, bg_color, border_color2 },
-	[SchemeSel]  = { selected_color, bg_alt_color, col_cyan },
+	[SchemeSel]  = { col_cyan, bg_alt_color, col_cyan },
 };
 
 /* tagging */
