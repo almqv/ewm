@@ -20,11 +20,6 @@ static const char dmenufont[]		= "IBM Plex Mono:size=15";
 
 static const char bg_alt_color[]		= "#272a34";
 static const char bg_color[]	= "#282c34";
-/*
-$bg_clr: #272a34
-$bg_alt_clr: #232730
-$bg_dark_clr: #21242e
-*/
 static const char text_color[]		= "#bbc2cf";
 static const char selected_color[]	= "#81a2be";
 static const char border_color[]	= "#cccccc";
@@ -96,7 +91,8 @@ static Key keys[] = {
 	{ MODKEY,		 				XF86XK_AudioRaiseVolume,  spawn, SHCMD("amixer -q set Master 5%+ unmute; pkill -RTMIN+1 dwmblocks") },
 	{ MODKEY,						XF86XK_AudioMute, spawn, SHCMD("amixer -q set Master toggle; pkill -RTMIN+1 dwmblocks") },
 	{ MODKEY|ShiftMask,				XF86XK_AudioMute, spawn, SHCMD("amixer set Capture toggle") },
-	{ MODKEY,						XK_d,		spawn,			{.v = dmenucmd } },
+	//{ MODKEY,						XK_d,		spawn,			{.v = dmenucmd } },
+	{ MODKEY,						XK_d,		spawn,			SHCMD("rofi -show drun")},
 	{ MODKEY,						XK_Return, 	spawn,			{.v = termcmd } },
 	{ MODKEY,						XK_e,	 	spawn,			{.v = browsercmd } },
 	{ MODKEY,						XK_b,		togglebar,		{0} },
