@@ -46,6 +46,9 @@
 #include "drw.h"
 #include "util.h"
 
+/* XWrappers */
+#include "xwrappers.h"
+
 /* macros */
 #define BUTTONMASK              (ButtonPressMask|ButtonReleaseMask)
 #define CLEANMASK(mask)         (mask & ~(numlockmask|LockMask) & (ShiftMask|ControlMask|Mod1Mask|Mod2Mask|Mod3Mask|Mod4Mask|Mod5Mask))
@@ -2174,14 +2177,18 @@ showhide(Client *c)
 		return;
 	if (ISVISIBLE(c)) {
 		/* show clients top down */
+		window_map(dpy, c->win, 1);
+		/*
 		XMoveWindow(dpy, c->win, c->x, c->y);
 		if ((!c->mon->lt[c->mon->sellt]->arrange || c->isfloating) && !c->isfullscreen)
 			resize(c, c->x, c->y, c->w, c->h, 0);
+		*/
 		showhide(c->snext);
 	} else {
 		/* hide clients bottom up */
 		showhide(c->snext);
-		XMoveWindow(dpy, c->win, WIDTH(c) * -2, c->y);
+		window_unmap(dpy, c->win, root, 1);
+		//XMoveWindow(dpy, c->win, WIDTH(c) * -2, c->y);
 	}
 }
 

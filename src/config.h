@@ -19,7 +19,7 @@ static const char *fonts[]		= { "IBM Plex Mono:size=11" };
 static const char dmenufont[]		= "IBM Plex Mono:size=15";
 
 static const char bg_alt_color[]		= "#272a34";
-static const char bg_color[]	= "#282c34";
+static const char bg_color[]	= "#21242b";
 static const char text_color[]		= "#bbc2cf";
 static const char selected_color[]	= "#81a2be";
 static const char border_color_sel[]	= "#444953";
