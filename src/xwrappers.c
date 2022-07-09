@@ -1,10 +1,12 @@
 #include <X11/X.h>
 #include <X11/Xlib.h>
 #include <X11/Xproto.h>
+#include <X11/Xutil.h>
 
-static Atom atom[LastAtom];
+#include "xwrappers.h"
+
+static Atom atoms[LastAtom];
 static int atoms_intialised = 0;
-static int (*xerrorxlib)(Display *, XErrorEvent *);
 
 Atom *
 get_atoms(Display *dpy)
@@ -48,10 +50,10 @@ get_atoms(Display *dpy)
 		atoms[Xembed] = XInternAtom(dpy, "_XEMBED", False);
 		atoms[XembedInfo] = XInternAtom(dpy, "_XEMBED_INFO", False);
 
-		atoms[MWMClientTags] = XInternAtom(dpy, "_MWM_CLIENT_TAGS", False);
-		atoms[MWMCurrentTags] = XInternAtom(dpy, "_MWM_CURRENT_TAGS", False);
-		atoms[MWMClientMonitor] = XInternAtom(dpy, "_MWM_CLIENT_MONITOR", False);
-		atoms[MWMBorderWidth] = XInternAtom(dpy, "_MWM_BORDER_WIDTH", False);
+		atoms[WMClientTags] = XInternAtom(dpy, "_MWM_CLIENT_TAGS", False);
+		atoms[WMCurrentTags] = XInternAtom(dpy, "_MWM_CURRENT_TAGS", False);
+		atoms[WMClientMonitor] = XInternAtom(dpy, "_MWM_CLIENT_MONITOR", False);
+		atoms[WMBorderWidth] = XInternAtom(dpy, "_MWM_BORDER_WIDTH", False);
 		atoms[SteamGame] = XInternAtom(dpy, "STEAM_GAME", False);
 
 		atoms[KDENetWMWindowTypeOverride] = XInternAtom(dpy, "_KDE_NET_WM_WINDOW_TYPE_OVERRIDE", False);
@@ -63,8 +65,45 @@ get_atoms(Display *dpy)
 	return atoms;
 }
 
+// Function to set a windows state with x
 void
 window_set_state(Display *dpy, Window win, long state) {
 	long data[] = {state, None};
-	
+	get_atoms(dpy);	
+
+	XChangeProperty(dpy, win, atoms[WMState], atoms[WMState], 32, PropModeReplace, (unsigned char*)data, 2);
+}
+
+void 
+window_map(Display *dpy, Window win, int deicon) {
+	if (!win) // if the window does not exist then just panic and escape
+		return;
+
+	XMapWindow(dpy, win);
+	if (deicon)
+		window_set_state(dpy, win, NormalState);
+	XSetInputFocus(dpy, win, RevertToPointerRoot, CurrentTime);
+}
+
+void
+window_umap(Display * dpy, Window win, Window root, int icon) {
+	static XWindowAttributes ra, ca;
+	if (!win)
+		return;
+
+	XGrabServer(dpy);
+
+	XGetWindowAttributes(dpy, root, &ra); 
+	XGetWindowAttributes(dpy, win, &ca); 
+
+	XSelectInput(dpy, root, ra.your_event_mask & ~SubstructureNotifyMask);
+	XSelectInput(dpy, win, ca.your_event_mask & ~SubstructureNotifyMask);
+
+	XUnmapWindow(dpy, win);
+	if (icon)
+		window_set_state(dpy, win, IconicState);
+
+	XSelectInput(dpy, root, ra.your_event_mask);
+	XSelectInput(dpy, win, ca.your_event_mask);
+	XUngrabServer(dpy);
 }

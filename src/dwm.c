@@ -66,10 +66,13 @@
 /* enums */
 enum { CurNormal, CurResize, CurMove, CurLast }; /* cursor */
 enum { SchemeNorm, SchemeSel }; /* color schemes */
+/*
 enum { NetSupported, NetWMName, NetWMState, NetWMCheck,
        NetWMFullscreen, NetActiveWindow, NetWMWindowType,
        NetWMWindowTypeDialog, NetClientList, NetLast }; /* EWMH atoms */
+/*
 enum { WMProtocols, WMDelete, WMState, WMTakeFocus, WMLast }; /* default atoms */
+
 enum { ClkTagBar, ClkLtSymbol, ClkStatusText, ClkWinTitle,
        ClkClientWin, ClkRootWin, ClkLast }; /* clicks */
 
@@ -2187,7 +2190,7 @@ showhide(Client *c)
 	} else {
 		/* hide clients bottom up */
 		showhide(c->snext);
-		window_unmap(dpy, c->win, root, 1);
+		window_umap(dpy, c->win, root, 1);
 		//XMoveWindow(dpy, c->win, WIDTH(c) * -2, c->y);
 	}
 }
