@@ -3,7 +3,7 @@
 
 #define STATUSBAR "dwmblocks"
 /* appearance */
-static const unsigned int borderpx	= 1;			/* border pixel of windows */
+static const unsigned int borderpx	= 2;			/* border pixel of windows */
 static const unsigned int snap		= 16;			/* snap pixel (32)*/
 static const unsigned int gappx		= 0;
 static const unsigned int gapmodes[] = { 0, 64 };
@@ -15,15 +15,15 @@ static const int usealtbar			= 1; 			/* 1 means use non-dwm status bar */
 static const char *altbarclass		= "Polybar";	/* Alternate bar class name */
 static const char *alttrayname		= "tray";		/* Polybar tray instance name */
 static const char *altbarcmd		= "$HOME/.config/polybar/launch"; /* Alternate bar launch command */
-static const char *fonts[]		= { "IBM Plex Mono:size=11" };
+static const char *fonts[]			= { "IBM Plex Mono:size=11" };
 static const char dmenufont[]		= "IBM Plex Mono:size=15";
 
 static const char bg_alt_color[]		= "#272a34";
-static const char bg_color[]	= "#282c34";
-static const char text_color[]		= "#bbc2cf";
-static const char selected_color[]	= "#81a2be";
-static const char border_color[]	= "#575757";
-static const char border_color2[]	= "#cccccc";
+static const char bg_color[]			= "#282c34";
+static const char text_color[]			= "#bbc2cf";
+static const char selected_color[]		= "#81a2be";
+static const char border_color_sel[]	= "#444953";
+static const char border_color_norm[]	= "#32373f";
 
 static const char col_gray1[]		= "#222222";
 static const char col_gray2[]		= "#444444";
@@ -33,8 +33,8 @@ static const char col_cyan[]		= "#5f819d";
 //static const char col_cyan[]		= "#51afef";
 static const char *colors[][3]		= {
 	/*		fg		bg		border	*/
-	[SchemeNorm] = { text_color, bg_color, border_color },
-	[SchemeSel]  = { col_cyan, bg_alt_color, border_color2 },
+	[SchemeNorm] = { text_color, bg_color, border_color_norm },
+	[SchemeSel]  = { col_cyan, bg_alt_color, border_color_sel },
 };
 
 /* tagging */
