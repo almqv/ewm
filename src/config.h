@@ -5,7 +5,7 @@
 /* appearance */
 static const unsigned int borderpx	= 1;			/* border pixel of windows */
 static const unsigned int snap		= 16;			/* snap pixel (32)*/
-static const unsigned int gappx		= 1;
+static const unsigned int gappx		= 0;
 static const unsigned int gapmodes[] = { 0, 64 };
 static const int showbar			= 1;			/* 0 means no bar */
 static const int topbar				= 1;			/* 0 means bottom bar */
@@ -22,8 +22,8 @@ static const char bg_alt_color[]		= "#272a34";
 static const char bg_color[]	= "#282c34";
 static const char text_color[]		= "#bbc2cf";
 static const char selected_color[]	= "#81a2be";
-static const char border_color[]	= "#cccccc";
-static const char border_color2[]	= "#1d1f21";
+static const char border_color[]	= "#575757";
+static const char border_color2[]	= "#cccccc";
 
 static const char col_gray1[]		= "#222222";
 static const char col_gray2[]		= "#444444";
@@ -33,8 +33,8 @@ static const char col_cyan[]		= "#5f819d";
 //static const char col_cyan[]		= "#51afef";
 static const char *colors[][3]		= {
 	/*		fg		bg		border	*/
-	[SchemeNorm] = { text_color, bg_color, border_color2 },
-	[SchemeSel]  = { col_cyan, bg_alt_color, col_cyan },
+	[SchemeNorm] = { text_color, bg_color, border_color },
+	[SchemeSel]  = { col_cyan, bg_alt_color, border_color2 },
 };
 
 /* tagging */
