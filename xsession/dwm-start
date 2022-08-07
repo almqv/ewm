@@ -16,15 +16,9 @@ $HOME/.config/picom/launch &
 # Background
 nitrogen --restore &
 
-# conky
-$HOME/.config/conky/launch.sh &
-
 # Anti sleep
 xset s off &
 xset -dpms &
-
-# dwmblocks
-dwmblocks > /dev/null &
 
 # Loop
 while true; do
