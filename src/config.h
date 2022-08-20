@@ -60,8 +60,8 @@ static const int resizehints = 1;	 /* 1 means respect size hints in tiled resiza
 
 static const Layout layouts[] = {
 	/* symbol	  arrange function */
-	{ "><>",	  NULL },	 
 	{ "[]=",	  tile },	 /* first entry is default */
+	{ "><>",	  NULL },	 
 	{ "[M]",	  monocle },
 };
 
@@ -124,8 +124,8 @@ static Key keys[] = {
 	{ MODKEY|ControlMask|ShiftMask, XK_Down,	moveresizeedge, {.v = "B"} },
 	{ MODKEY|ControlMask|ShiftMask, XK_Left,	moveresizeedge, {.v = "L"} },
 	{ MODKEY|ControlMask|ShiftMask, XK_Right,  moveresizeedge,	{.v = "R"} },
-	{ MODKEY,						XK_f,		setlayout,		{.v = &layouts[0]} },
-	{ MODKEY,						XK_t,		setlayout,		{.v = &layouts[1]} },
+	{ MODKEY,						XK_f,		setlayout,		{.v = &layouts[1]} },
+	{ MODKEY,						XK_t,		setlayout,		{.v = &layouts[0]} },
 	{ MODKEY,						XK_m,		setlayout,		{.v = &layouts[2]} },
 	//{ MODKEY,						XK_space,  setlayout,		{0} },
 	{ MODKEY|ShiftMask,				XK_space,  togglefloating,	{0} },
