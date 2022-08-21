@@ -4,9 +4,9 @@
 #define STATUSBAR "dwmblocks"
 /* appearance */
 static const unsigned int borderpx	= 2;			/* border pixel of windows */
-static const unsigned int snap		= 16;			/* snap pixel (32)*/
+static const unsigned int snap		= 0;			/* snap pixel (32)*/
 static const unsigned int gappx		= 0;
-static const unsigned int gapmodes[] = { 0, 64 };
+static const unsigned int gapmodes[] = { 0, 20 };
 static const int showbar			= 1;			/* 0 means no bar */
 static const int topbar				= 1;			/* 0 means bottom bar */
 static const int barverticalpadding = 6; 			/* Vertical bar padding  */
@@ -15,13 +15,13 @@ static const int usealtbar			= 1; 			/* 1 means use non-dwm status bar */
 static const char *altbarclass		= "Polybar";	/* Alternate bar class name */
 static const char *alttrayname		= "tray";		/* Polybar tray instance name */
 static const char *altbarcmd		= "$HOME/.config/polybar/launch"; /* Alternate bar launch command */
-static const char *fonts[]		= { "IBM Plex Mono:size=11" };
+static const char *fonts[]			= { "IBM Plex Mono:size=11" };
 static const char dmenufont[]		= "IBM Plex Mono:size=15";
 
 static const char bg_alt_color[]		= "#272a34";
-static const char bg_color[]	= "#21242b";
-static const char text_color[]		= "#bbc2cf";
-static const char selected_color[]	= "#81a2be";
+static const char bg_color[]			= "#282c34";
+static const char text_color[]			= "#bbc2cf";
+static const char selected_color[]		= "#81a2be";
 static const char border_color_sel[]	= "#444953";
 static const char border_color_norm[]	= "#32373f";
 
@@ -124,8 +124,8 @@ static Key keys[] = {
 	{ MODKEY|ControlMask|ShiftMask, XK_Down,	moveresizeedge, {.v = "B"} },
 	{ MODKEY|ControlMask|ShiftMask, XK_Left,	moveresizeedge, {.v = "L"} },
 	{ MODKEY|ControlMask|ShiftMask, XK_Right,  moveresizeedge,	{.v = "R"} },
-	{ MODKEY,						XK_t,		setlayout,		{.v = &layouts[0]} },
 	{ MODKEY,						XK_f,		setlayout,		{.v = &layouts[1]} },
+	{ MODKEY,						XK_t,		setlayout,		{.v = &layouts[0]} },
 	{ MODKEY,						XK_m,		setlayout,		{.v = &layouts[2]} },
 	//{ MODKEY,						XK_space,  setlayout,		{0} },
 	{ MODKEY|ShiftMask,				XK_space,  togglefloating,	{0} },
