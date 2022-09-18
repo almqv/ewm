@@ -15,8 +15,8 @@ static const int usealtbar			= 1; 			/* 1 means use non-dwm status bar */
 static const char *altbarclass		= "Polybar";	/* Alternate bar class name */
 static const char *alttrayname		= "tray";		/* Polybar tray instance name */
 static const char *altbarcmd		= "$HOME/.config/polybar/launch"; /* Alternate bar launch command */
-static const char *fonts[]			= { "IBM Plex Mono:size=11" };
-static const char dmenufont[]		= "IBM Plex Mono:size=15";
+static const char *fonts[]			= { "Fira Code:size=11" };
+static const char dmenufont[]		= "Fira Code:size=15";
 
 static const char bg_alt_color[]		= "#272a34";
 static const char bg_color[]			= "#282c34";
