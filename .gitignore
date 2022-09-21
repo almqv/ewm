@@ -1,6 +1,7 @@
 *.o
-src/dwm
-src/dwm-msg
+src/ewm
+src/ewm-msg
+src/ewm.desktop
 *.diff
 *.orig
 *.rej
