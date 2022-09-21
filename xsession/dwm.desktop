@@ -1,5 +1,0 @@
-[Desktop Entry]
-Name=dwm
-Comment=This session starts dwm
-Exec=/usr/local/bin/dwm-start
-Type=XSession

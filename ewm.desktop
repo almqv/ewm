@@ -1,0 +1,5 @@
+[Desktop Entry]
+Name=ewm
+Comment=Epsilons Window Manager
+Exec=ewm
+Type=XSession
