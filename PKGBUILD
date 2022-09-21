@@ -9,13 +9,7 @@ license=('GPL-3.0')
 depends=('libx11' 'libxinerama' 'libxft' 'freetype2' 'alacritty')
 optdepends=('rofi' 'polybar')
 options=(zipman)
-install=ewm.install
 source=(ewm.desktop)
-
-prepare() {
-  cd "$srcdir/$pkgname-$pkgver"
-  cp "$srcdir/config.h" config.h
-}
 
 build() {
 	cd "$srcdir/"

@@ -1,4 +1,0 @@
-post_install() {
-	echo "-- Edit config.h in ewm's PKGBUILD directory (generally /var/abs/community/ewm/)"
-	echo "-- and rebuild package if you want to change settings."
-}
