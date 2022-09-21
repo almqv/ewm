@@ -19,8 +19,9 @@ build() {
 package() {
 	cd "$srcdir"
 	make PREFIX=/usr DESTDIR="$pkgdir" install
+	cd "$startdir"
 	install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
-	#install -Dm644 README.md "$pkgdir/usr/share/doc/$pkgname/README.md"
-	install -Dm644 "$srcdir/ewm.desktop" "$pkgdir/usr/share/xsessions/ewm.desktop"
+	install -Dm644 README.md "$pkgdir/usr/share/doc/$pkgname/README.md"
+	install -Dm644 ewm.desktop "$pkgdir/usr/share/xsessions/ewm.desktop"
 }
 sha256sums=('4434a1f7047cfc847a21f70674111e68002aea80a9dc08f8b61f55d8f88794c3')
