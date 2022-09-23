@@ -1,4 +1,4 @@
-# Epsilon Window Manager 
+# Epsilons Window Manager 
 
 ## About
 This is a tiling window manager for Xorg based of the suckless' [dynamic window manager](http://dwm.suckless.org/). In short, **ewm** *is a fork of* **dwm**.
