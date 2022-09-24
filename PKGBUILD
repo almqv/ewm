@@ -1,7 +1,7 @@
 # Maintainer: E. Almqvist <elalmqvist@gmail.com>
 pkgname=ewm
 pkgver=1.1
-pkgrel=1
+pkgrel=2
 pkgdesc="Epsilons Window Manager, a tiling window manager based of suckless' dynamic window manager."
 arch=('i686' 'x86_64')
 url="https://github.com/E-Almqvist/ewm"
@@ -9,8 +9,8 @@ license=('GPL-3.0')
 depends=('libx11' 'libxinerama' 'libxft' 'freetype2' 'alacritty' 'yajl')
 optdepends=('rofi' 'polybar')
 options=(zipman)
+install='ewm.install'
 source=(ewm.desktop)
-install=ewm.install
 
 build() {
 	cd "$srcdir/"
