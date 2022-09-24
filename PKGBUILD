@@ -1,7 +1,7 @@
 # Maintainer: E. Almqvist <elalmqvist@gmail.com>
 pkgname=ewm
 pkgver=1.1
-pkgrel=2
+pkgrel=4
 pkgdesc="Epsilons Window Manager, a tiling window manager based of the suckless dynamic window manager."
 arch=('i686' 'x86_64')
 url="https://github.com/E-Almqvist/ewm"
