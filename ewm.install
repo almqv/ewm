@@ -1,5 +1,5 @@
 post_install() {
+	echo "-- You can change your autostart script at $HOME/.ewm/autostart.sh and then restart ewm for changes to take effect."
 	mkdir -p $HOME/.ewm
 	[ ! -f $HOME/.ewm/autostart.sh ] && cp $startdir/autostart.sh.template $HOME/.ewm/autostart.sh
-	echo "* EWM has been installed. Change your autostart script in ~/.ewm/autostart.sh to fir your needs."
 }
