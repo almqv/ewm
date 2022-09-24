@@ -8,7 +8,7 @@ static const unsigned int snap		= 0;			/* snap pixel (32)*/
 static const unsigned int gappx		= 0;
 static const unsigned int gapmodes[] = { 0, 20 };
 static const int showbar			= 1;			/* 0 means no bar */
-static const int topbar				= 1;			/* 0 means bottom bar */
+static const int topbar				= 0;			/* 0 means bottom bar */
 static const int barverticalpadding = 6; 			/* Vertical bar padding  */
 static const int usealtbar			= 1; 			/* 1 means use non-dwm status bar */
 

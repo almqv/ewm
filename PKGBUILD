@@ -6,10 +6,11 @@ pkgdesc="Epsilons Window Manager, a tiling window manager based of suckless' dyn
 arch=('i686' 'x86_64')
 url="https://github.com/E-Almqvist/ewm"
 license=('GPL-3.0')
-depends=('libx11' 'libxinerama' 'libxft' 'freetype2' 'alacritty')
+depends=('libx11' 'libxinerama' 'libxft' 'freetype2' 'alacritty' 'yajl')
 optdepends=('rofi' 'polybar')
 options=(zipman)
 source=(ewm.desktop)
+install=ewm.install
 
 build() {
 	cd "$srcdir/"
@@ -23,5 +24,5 @@ package() {
 	install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
 	install -Dm644 README.md "$pkgdir/usr/share/doc/$pkgname/README.md"
 	install -Dm644 ewm.desktop "$pkgdir/usr/share/xsessions/ewm.desktop"
+	install -Dm755 ewm-start "$pkgdir/usr/local/bin/ewm-start"
 }
-sha256sums=('4434a1f7047cfc847a21f70674111e68002aea80a9dc08f8b61f55d8f88794c3')

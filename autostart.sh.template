@@ -1,0 +1,9 @@
+# GNOME Keyring
+# eval $(gnome-keyring-daemon --start)
+# export SSH_AUTH_SOCK
+
+# Keyboard layout
+# setxkbmap us &
+
+# Display settings
+# $HOME/.screenlayout/layout.sh &
