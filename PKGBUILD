@@ -1,6 +1,6 @@
 # Maintainer: E. Almqvist <elalmqvist@gmail.com>
 pkgname=ewm
-pkgver=1.0
+pkgver=1.1
 pkgrel=1
 pkgdesc="Epsilons Window Manager, a tiling window manager based of suckless' dynamic window manager."
 arch=('i686' 'x86_64')
@@ -26,3 +26,4 @@ package() {
 	install -Dm644 ewm.desktop "$pkgdir/usr/share/xsessions/ewm.desktop"
 	install -Dm755 ewm-start "$pkgdir/usr/local/bin/ewm-start"
 }
+sha256sums=('17a4add029baca2f90087beea0e1a45c92efd2618ba02297b8cb259fc03f6632')
