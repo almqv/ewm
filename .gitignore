@@ -8,3 +8,4 @@ src/ewm.desktop
 
 pkg/
 *.pkg*
+src/compile_commands.json
