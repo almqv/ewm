@@ -1,0 +1,22 @@
+[
+  {
+    "directory": ".",
+    "command": "cc -c -std=c99 -pedantic -Wall -Wno-deprecated-declarations -Os -I/usr/include/X11 -I/usr/include/freetype2 -I/usr/include/yajl -D_DEFAULT_SOURCE -D_BSD_SOURCE -D_POSIX_C_SOURCE=200809L -DVERSION=\\\"6.2\\\" -DXINERAMA drw.c",
+    "file": "drw.c"
+  },
+  {
+    "directory": ".",
+    "command": "cc -c -std=c99 -pedantic -Wall -Wno-deprecated-declarations -Os -I/usr/include/X11 -I/usr/include/freetype2 -I/usr/include/yajl -D_DEFAULT_SOURCE -D_BSD_SOURCE -D_POSIX_C_SOURCE=200809L -DVERSION=\\\"6.2\\\" -DXINERAMA dwm.c",
+    "file": "dwm.c"
+  },
+  {
+    "directory": ".",
+    "command": "cc -c -std=c99 -pedantic -Wall -Wno-deprecated-declarations -Os -I/usr/include/X11 -I/usr/include/freetype2 -I/usr/include/yajl -D_DEFAULT_SOURCE -D_BSD_SOURCE -D_POSIX_C_SOURCE=200809L -DVERSION=\\\"6.2\\\" -DXINERAMA util.c",
+    "file": "util.c"
+  },
+  {
+    "directory": ".",
+    "command": "cc -c -std=c99 -pedantic -Wall -Wno-deprecated-declarations -Os -I/usr/include/X11 -I/usr/include/freetype2 -I/usr/include/yajl -D_DEFAULT_SOURCE -D_BSD_SOURCE -D_POSIX_C_SOURCE=200809L -DVERSION=\\\"6.2\\\" -DXINERAMA dwm-msg.c",
+    "file": "dwm-msg.c"
+  }
+]
