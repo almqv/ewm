@@ -17,67 +17,67 @@
 // clang-format on
 
 typedef enum IPCMessageType {
-  IPC_TYPE_RUN_COMMAND = 0,
-  IPC_TYPE_GET_MONITORS = 1,
-  IPC_TYPE_GET_TAGS = 2,
-  IPC_TYPE_GET_LAYOUTS = 3,
-  IPC_TYPE_GET_DWM_CLIENT = 4,
-  IPC_TYPE_SUBSCRIBE = 5,
-  IPC_TYPE_EVENT = 6
+	IPC_TYPE_RUN_COMMAND    = 0,
+	IPC_TYPE_GET_MONITORS   = 1,
+	IPC_TYPE_GET_TAGS       = 2,
+	IPC_TYPE_GET_LAYOUTS    = 3,
+	IPC_TYPE_GET_DWM_CLIENT = 4,
+	IPC_TYPE_SUBSCRIBE      = 5,
+	IPC_TYPE_EVENT          = 6
 } IPCMessageType;
 
 typedef enum IPCEvent {
-  IPC_EVENT_TAG_CHANGE = 1 << 0,
-  IPC_EVENT_CLIENT_FOCUS_CHANGE = 1 << 1,
-  IPC_EVENT_LAYOUT_CHANGE = 1 << 2,
-  IPC_EVENT_MONITOR_FOCUS_CHANGE = 1 << 3,
-  IPC_EVENT_FOCUSED_TITLE_CHANGE = 1 << 4,
-  IPC_EVENT_FOCUSED_STATE_CHANGE = 1 << 5
+	IPC_EVENT_TAG_CHANGE           = 1 << 0,
+	IPC_EVENT_CLIENT_FOCUS_CHANGE  = 1 << 1,
+	IPC_EVENT_LAYOUT_CHANGE        = 1 << 2,
+	IPC_EVENT_MONITOR_FOCUS_CHANGE = 1 << 3,
+	IPC_EVENT_FOCUSED_TITLE_CHANGE = 1 << 4,
+	IPC_EVENT_FOCUSED_STATE_CHANGE = 1 << 5
 } IPCEvent;
 
 typedef enum IPCSubscriptionAction {
-  IPC_ACTION_UNSUBSCRIBE = 0,
-  IPC_ACTION_SUBSCRIBE = 1
+	IPC_ACTION_UNSUBSCRIBE = 0,
+	IPC_ACTION_SUBSCRIBE   = 1
 } IPCSubscriptionAction;
 
 /**
  * Every IPC packet starts with this structure
  */
 typedef struct dwm_ipc_header {
-  uint8_t magic[IPC_MAGIC_LEN];
-  uint32_t size;
-  uint8_t type;
+	uint8_t magic[IPC_MAGIC_LEN];
+	uint32_t size;
+	uint8_t type;
 } __attribute((packed)) dwm_ipc_header_t;
 
 typedef enum ArgType {
-  ARG_TYPE_NONE = 0,
-  ARG_TYPE_UINT = 1,
-  ARG_TYPE_SINT = 2,
-  ARG_TYPE_FLOAT = 3,
-  ARG_TYPE_PTR = 4,
-  ARG_TYPE_STR = 5
+	ARG_TYPE_NONE  = 0,
+	ARG_TYPE_UINT  = 1,
+	ARG_TYPE_SINT  = 2,
+	ARG_TYPE_FLOAT = 3,
+	ARG_TYPE_PTR   = 4,
+	ARG_TYPE_STR   = 5
 } ArgType;
 
 /**
  * An IPCCommand function can have either of these function signatures
  */
 typedef union ArgFunction {
-  void (*single_param)(const Arg *);
-  void (*array_param)(const Arg *, int);
+	void (*single_param)(const Arg *);
+	void (*array_param)(const Arg *, int);
 } ArgFunction;
 
 typedef struct IPCCommand {
-  char *name;
-  ArgFunction func;
-  unsigned int argc;
-  ArgType *arg_types;
+	char *name;
+	ArgFunction func;
+	unsigned int argc;
+	ArgType *arg_types;
 } IPCCommand;
 
 typedef struct IPCParsedCommand {
-  char *name;
-  Arg *args;
-  ArgType *arg_types;
-  unsigned int argc;
+	char *name;
+	Arg *args;
+	ArgType *arg_types;
+	unsigned int argc;
 } IPCParsedCommand;
 
 /**
@@ -88,15 +88,15 @@ typedef struct IPCParsedCommand {
  * @param commands Address of IPCCommands array defined in config.h
  * @param commands_len Length of commands[] array
  *
- * @return int The file descriptor of the socket if it was successfully created,
- *   -1 otherwise
+ * @return int The file descriptor of the socket if it was successfully
+ * created, -1 otherwise
  */
 int ipc_init(const char *socket_path, const int p_epoll_fd,
              IPCCommand commands[], const int commands_len);
 
 /**
- * Uninitialize the socket and module. Free allocated memory and restore static
- * variables to their state before ipc_init
+ * Uninitialize the socket and module. Free allocated memory and restore
+ * static variables to their state before ipc_init
  */
 void ipc_cleanup();
 
@@ -150,16 +150,16 @@ int ipc_accept_client();
  * @param c Address of IPCClient
  * @param msg_type Address to IPCMessageType variable which will be assigned
  *   the message type of the received message
- * @param msg_size Address to uint32_t variable which will be assigned the size
- *   of the received message
+ * @param msg_size Address to uint32_t variable which will be assigned the
+ * size of the received message
  * @param msg Address to char* variable which will be assigned the address of
  *   the received message. This must be freed using free().
  *
- * @return 0 on success, -1 on error reading message, -2 if reading the message
- * resulted in EAGAIN, EINTR, or EWOULDBLOCK.
+ * @return 0 on success, -1 on error reading message, -2 if reading the
+ * message resulted in EAGAIN, EINTR, or EWOULDBLOCK.
  */
-int ipc_read_client(IPCClient *c, IPCMessageType *msg_type, uint32_t *msg_size,
-                    char **msg);
+int ipc_read_client(IPCClient *c, IPCMessageType *msg_type,
+                    uint32_t *msg_size, char **msg);
 
 /**
  * Write any pending buffer of the client to the client's socket
@@ -204,8 +204,8 @@ void ipc_prepare_reply_failure(IPCClient *c, IPCMessageType msg_type,
 void ipc_prepare_reply_success(IPCClient *c, IPCMessageType msg_type);
 
 /**
- * Send a tag_change_event to all subscribers. Should be called only when there
- * has been a tag state change.
+ * Send a tag_change_event to all subscribers. Should be called only when
+ * there has been a tag state change.
  *
  * @param mon_num The index of the monitor (Monitor.num property)
  * @param old_state The old tag state
@@ -259,7 +259,8 @@ void ipc_monitor_focus_change_event(const int last_mon_num,
  * @param new_name New name of the client window
  */
 void ipc_focused_title_change_event(const int mon_num, const Window client_id,
-                                    const char *old_name, const char *new_name);
+                                    const char *old_name,
+                                    const char *new_name);
 
 /**
  * Send a focused_state_change_event to all subscribers. Should only be called
@@ -285,8 +286,8 @@ void ipc_send_events(Monitor *mons, Monitor **lastselmon, Monitor *selmon);
 
 /**
  * Handle an epoll event caused by a registered IPC client. Read, process, and
- * handle any received messages from clients. Write pending buffer to client if
- * the client is ready to receive messages. Drop clients that have sent an
+ * handle any received messages from clients. Write pending buffer to client
+ * if the client is ready to receive messages. Drop clients that have sent an
  * EPOLLHUP.
  *
  * @param ev Associated epoll event returned by epoll_wait
@@ -304,16 +305,18 @@ void ipc_send_events(Monitor *mons, Monitor **lastselmon, Monitor *selmon);
 int ipc_handle_client_epoll_event(struct epoll_event *ev, Monitor *mons,
                                   Monitor **lastselmon, Monitor *selmon,
                                   const char *tags[], const int tags_len,
-                                  const Layout *layouts, const int layouts_len);
+                                  const Layout *layouts,
+                                  const int layouts_len);
 
 /**
- * Handle an epoll event caused by the IPC socket. This function only handles an
- * EPOLLIN event indicating a new client requesting to connect to the socket.
+ * Handle an epoll event caused by the IPC socket. This function only handles
+ * an EPOLLIN event indicating a new client requesting to connect to the
+ * socket.
  *
  * @param ev Associated epoll event returned by epoll_wait
  *
- * @return 0, if the event was successfully handled, -1 if not an EPOLLIN event
- * or if a new IPC client connection request could not be accepted.
+ * @return 0, if the event was successfully handled, -1 if not an EPOLLIN
+ * event or if a new IPC client connection request could not be accepted.
  */
 int ipc_handle_socket_epoll_event(struct epoll_event *ev);
 

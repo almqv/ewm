@@ -4,40 +4,40 @@
 #define STATUSBAR "dwmblocks"
 
 /* appearance */
-static const unsigned int borderpx = 0; /* border pixel of windows */
-static const unsigned int snap = 0;     /* snap pixel (32)*/
-static const unsigned int gappx = 0;
+static const unsigned int borderpx   = 0; /* border pixel of windows */
+static const unsigned int snap       = 0; /* snap pixel (32)*/
+static const unsigned int gappx      = 0;
 static const unsigned int gapmodes[] = {20, 0};
-static const int showbar = 1;            /* 0 means no bar */
-static const int topbar = 1;             /* 0 means bottom bar */
-static const int barverticalpadding = 6; /* Vertical bar padding  */
-static const int usealtbar = 0;          /* 1 means use non-dwm status bar */
+static const int showbar             = 1; /* 0 means no bar */
+static const int topbar              = 1; /* 0 means bottom bar */
+static const int barverticalpadding  = 6; /* Vertical bar padding  */
+static const int usealtbar           = 0; /* 1 means use non-dwm status bar */
 
 static const char *altbarclass = "Polybar"; /* Alternate bar class name */
 static const char *alttrayname = "tray";    /* Polybar tray instance name */
 // static const char *altbarcmd		= "$HOME/.config/polybar/launch"; /*
 // Alternate bar launch command */
-static const char *altbarcmd = "";
-static const char *fonts[] = {"Fira Code:size=11"};
+static const char *altbarcmd  = "";
+static const char *fonts[]    = {"Fira Code:size=11"};
 static const char dmenufont[] = "Fira Code:size=15";
 
-static const char bg_color[] = "#181818";
-static const char bg_alt_color[] = "#111111";
-static const char text_color[] = "#bbc2cf";
-static const char selected_color[] = "#81a2be";
-static const char border_color_sel[] = "#444953";
+static const char bg_color[]          = "#181818";
+static const char bg_alt_color[]      = "#111111";
+static const char text_color[]        = "#bbc2cf";
+static const char selected_color[]    = "#81a2be";
+static const char border_color_sel[]  = "#444953";
 static const char border_color_norm[] = "#32373f";
 
 static const char col_gray1[] = "#222222";
 static const char col_gray2[] = "#444444";
 static const char col_gray3[] = "#bbbbbb";
 static const char col_gray4[] = "#eeeeee";
-static const char col_cyan[] = "#5f819d";
+static const char col_cyan[]  = "#5f819d";
 // static const char col_cyan[]		= "#51afef";
 static const char *colors[][3] = {
     /*		fg		bg		border	*/
     [SchemeNorm] = {text_color, bg_color, border_color_norm},
-    [SchemeSel] = {col_cyan, bg_alt_color, border_color_sel},
+    [SchemeSel]  = {col_cyan, bg_alt_color, border_color_sel},
 };
 
 /* tagging */
@@ -73,29 +73,34 @@ static const Layout layouts[] = {
 
 /* key definitions */
 #define MODKEY Mod4Mask
-#define TAGKEYS(KEY, TAG)                                                      \
-  {MODKEY, KEY, view, {.ui = 1 << TAG}},                                       \
-      {MODKEY | ControlMask, KEY, toggleview, {.ui = 1 << TAG}},               \
-      {MODKEY | ShiftMask, KEY, tag, {.ui = 1 << TAG}},                        \
-      {MODKEY | ControlMask | ShiftMask, KEY, toggletag, {.ui = 1 << TAG}},
+#define TAGKEYS(KEY, TAG)                                                    \
+	{MODKEY, KEY, view, {.ui = 1 << TAG}},                                   \
+	    {MODKEY | ControlMask, KEY, toggleview, {.ui = 1 << TAG}},           \
+	    {MODKEY | ShiftMask, KEY, tag, {.ui = 1 << TAG}},                    \
+	    {MODKEY | ControlMask | ShiftMask,                                   \
+	     KEY,                                                                \
+	     toggletag,                                                          \
+	     {.ui = 1 << TAG}},
 
 /* helper for spawning shell commands in the pre dwm-5.0 fashion */
-#define SHCMD(cmd)                                                             \
-  {                                                                            \
-    .v = (const char *[]) { "/bin/sh", "-c", cmd, NULL }                       \
-  }
+#define SHCMD(cmd)                                                           \
+	{                                                                        \
+		.v = (const char *[]) {                                              \
+			"/bin/sh", "-c", cmd, NULL                                       \
+		}                                                                    \
+	}
 
 /* commands */
 static char dmenumon[2] =
     "0"; /* component of dmenucmd, manipulated in spawn() */
-static const char *dmenucmd[] = {"dmenu_run", "-m", dmenumon, "-p",
-                                 "Run $",     "-z", "512",    NULL};
-static const char *termcmd[] = {"alacritty", NULL};
-static const char *browsercmd[] = {"firefox", NULL};
+static const char *dmenucmd[]            = {"dmenu_run", "-m", dmenumon, "-p",
+                                            "Run $",     "-z", "512",    NULL};
+static const char *termcmd[]             = {"alacritty", NULL};
+static const char *browsercmd[]          = {"firefox", NULL};
 static const char *betterlockscreencmd[] = {"betterlockscreen", "--lock",
                                             "blur", NULL};
-static const char *screenshotcmd[] = {"flameshot", "gui", NULL};
-static const char *cmuspausecmd[] = {"cmus-remote", "--pause", NULL};
+static const char *screenshotcmd[]       = {"flameshot", "gui", NULL};
+static const char *cmuspausecmd[]        = {"cmus-remote", "--pause", NULL};
 
 static Key keys[] = {
     /* modifier						key
@@ -197,7 +202,7 @@ static Button buttons[] = {
     {ClkTagBar, MODKEY, Button3, toggletag, {0}},
 };
 
-static const char *ipcsockpath = "/tmp/dwm.sock";
+static const char *ipcsockpath  = "/tmp/dwm.sock";
 static IPCCommand ipccommands[] = {
     IPCCOMMAND(view, 1, {ARG_TYPE_UINT}),
     IPCCOMMAND(toggleview, 1, {ARG_TYPE_UINT}),

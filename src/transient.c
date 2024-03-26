@@ -1,9 +1,9 @@
 /* cc transient.c -o transient -lX11 */
 
-#include <stdlib.h>
-#include <unistd.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+#include <stdlib.h>
+#include <unistd.h>
 
 int main(void) {
 	Display *d;
@@ -16,7 +16,7 @@ int main(void) {
 		exit(1);
 	r = DefaultRootWindow(d);
 
-	f = XCreateSimpleWindow(d, r, 100, 100, 400, 400, 0, 0, 0);
+	f           = XCreateSimpleWindow(d, r, 100, 100, 400, 400, 0, 0, 0);
 	h.min_width = h.max_width = h.min_height = h.max_height = 400;
 	h.flags = PMinSize | PMaxSize;
 	XSetWMNormalHints(d, f, &h);
