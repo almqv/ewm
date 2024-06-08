@@ -100,7 +100,7 @@ static const char *browsercmd[]          = {"firefox", NULL};
 static const char *betterlockscreencmd[] = {"betterlockscreen", "--lock",
                                             "blur", NULL};
 static const char *screenshotcmd[]       = {"flameshot", "gui", NULL};
-static const char *cmuspausecmd[]        = {"cmus-remote", "--pause", NULL};
+static const char *playctl_playpausecmd[]        = {"playctl", "play-pause", NULL};
 
 static Key keys[] = {
     /* modifier						key
@@ -166,7 +166,7 @@ static Key keys[] = {
     {MODKEY | ShiftMask, XK_period, tagmon, {.i = +1}},
     {MODKEY | ShiftMask, XK_l, spawn, {.v = betterlockscreencmd}},
     {MODKEY, XK_Print, spawn, {.v = screenshotcmd}},
-    {MODKEY, XK_u, spawn, {.v = cmuspausecmd}},
+    {MODKEY, XK_u, spawn, {.v = playctl_playpausecmd}},
     {MODKEY, XK_g, switchgaps, {.i = +1}},
     {MODKEY, XK_v, switchgaps, {.i = -1}},
     {MODKEY, XK_minus, setgaps, {.i = -1}},
