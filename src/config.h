@@ -117,7 +117,7 @@ static Key keys[] = {
     //= dmenucmd
     //}
     //},
-    {MODKEY, XK_d, spawn, SHCMD("dmenu_run -p")},
+    {MODKEY, XK_d, spawn, {.v = dmenucmd}},
     /*{MODKEY, XK_s, spawn, SHCMD("rofi -show ssh")},*/
     /*{MODKEY, XK_w, spawn, SHCMD("rofi -show window")},*/
     /*{MODKEY, XK_r, spawn, SHCMD("rofi -show run")},*/
