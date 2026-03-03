@@ -4,7 +4,7 @@
 #define STATUSBAR "dwmblocks"
 
 /* appearance */
-static const unsigned int borderpx   = 0; /* border pixel of windows */
+static const unsigned int borderpx   = 2; /* border pixel of windows */
 static const unsigned int snap       = 0; /* snap pixel (32)*/
 static const unsigned int gappx      = 0;
 static const unsigned int gapmodes[] = {20, 0};
@@ -26,7 +26,7 @@ static const char bg_alt_color[]      = "#111111";
 static const char text_color[]        = "#bbc2cf";
 static const char selected_color[]    = "#81a2be";
 static const char border_color_sel[]  = "#444953";
-static const char border_color_norm[] = "#32373f";
+static const char border_color_norm[] = "#12171f";
 
 static const char col_gray1[] = "#222222";
 static const char col_gray2[] = "#444444";
@@ -117,10 +117,10 @@ static Key keys[] = {
     //= dmenucmd
     //}
     //},
-    {MODKEY, XK_d, spawn, SHCMD("rofi -show drun")},
-    {MODKEY, XK_s, spawn, SHCMD("rofi -show ssh")},
-    {MODKEY, XK_w, spawn, SHCMD("rofi -show window")},
-    {MODKEY, XK_r, spawn, SHCMD("rofi -show run")},
+    {MODKEY, XK_d, spawn, SHCMD("dmenu_run -p")},
+    /*{MODKEY, XK_s, spawn, SHCMD("rofi -show ssh")},*/
+    /*{MODKEY, XK_w, spawn, SHCMD("rofi -show window")},*/
+    /*{MODKEY, XK_r, spawn, SHCMD("rofi -show run")},*/
     {MODKEY, XK_Return, spawn, {.v = termcmd}},
     {MODKEY, XK_e, spawn, {.v = browsercmd}},
     {MODKEY, XK_b, togglebar, {0}},
