@@ -25,7 +25,7 @@ static const char bg_color[]          = "#181818";
 static const char bg_alt_color[]      = "#111111";
 static const char text_color[]        = "#bbc2cf";
 static const char selected_color[]    = "#81a2be";
-static const char border_color_sel[]  = "#444953";
+static const char border_color_sel[]  = "#81a2be"; //"#444953";
 static const char border_color_norm[] = "#12171f";
 
 static const char col_gray1[] = "#222222";
