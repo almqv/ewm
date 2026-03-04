@@ -18,8 +18,8 @@ static const char *alttrayname = "tray";    /* Polybar tray instance name */
 // static const char *altbarcmd		= "$HOME/.config/polybar/launch"; /*
 // Alternate bar launch command */
 static const char *altbarcmd  = "";
-static const char *fonts[]    = {"Fira Code:size=11"};
-static const char dmenufont[] = "Fira Code:size=15";
+static const char *fonts[]    = {"Fira Code:size=9"};
+static const char dmenufont[] = "Fira Code:size=9";
 
 static const char bg_color[]          = "#181818";
 static const char bg_alt_color[]      = "#111111";
@@ -53,6 +53,7 @@ static const Rule rules[] = {
      */
     {"Gimp", NULL, NULL, 0, 1, -1},
     {"Firefox", NULL, NULL, 1 << 8, 0, -1},
+    {"zen", NULL, NULL, 1 << 8, 0, -1},
     {"discord", NULL, NULL, 0, 0, -1},
     {"Steam", NULL, NULL, 0, 0, -1},
     {"Qemu-system-x86_64", NULL, NULL, 0, 1, -1},
@@ -165,7 +166,7 @@ static Key keys[] = {
     {MODKEY | ShiftMask, XK_period, tagmon, {.i = +1}},
     {MODKEY | ShiftMask, XK_l, spawn, {.v = betterlockscreencmd}},
     {MODKEY, XK_Print, spawn, {.v = screenshotcmd}},
-    {MODKEY, XK_u, spawn, SHCMD("playctl play-pause")},
+    {MODKEY, XK_u, spawn, SHCMD("playerctl play-pause")},
     {MODKEY, XK_g, switchgaps, {.i = +1}},
     {MODKEY, XK_v, switchgaps, {.i = -1}},
     {MODKEY, XK_minus, setgaps, {.i = -1}},
