@@ -98,8 +98,7 @@ static const char *dmenucmd[]            = {"dmenu_run", "-m", dmenumon, "-p",
                                             "Run $",     "-z", "512",    NULL};
 static const char *termcmd[]             = {"alacritty", NULL};
 static const char *browsercmd[]          = {"firefox", NULL};
-static const char *betterlockscreencmd[] = {"betterlockscreen", "--lock",
-                                            "blur", NULL};
+static const char *betterlockscreencmd[] = {"lock", NULL};
 static const char *screenshotcmd[]       = {"flameshot", "gui", NULL};
 
 static Key keys[] = {
