@@ -4,6 +4,8 @@
 #include <string.h>
 #include <yajl/yajl_gen.h>
 
+#include "ewm.h"
+
 #define YSTR(str)    dump_string(gen, str)
 #define YINT(num)    yajl_gen_integer(gen, num)
 #define YDOUBLE(num) dump_double(gen, num)
@@ -36,7 +38,7 @@ yajl_gen_status dump_double(yajl_gen gen, double num);
 
 int dump_tag(yajl_gen gen, const char *name, const int tag_mask);
 
-int dump_tags(yajl_gen gen, const char *tags[], int tags_len);
+int dump_tags(yajl_gen gen, char *const tags[], int tags_len);
 
 int dump_client(yajl_gen gen, Client *c);
 

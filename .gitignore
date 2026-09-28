@@ -1,11 +1,7 @@
-*.o
-src/ewm
-src/ewm-msg
-src/ewm.desktop
+/build*/
+/result*
+compile_commands.json
+.cache/
 *.diff
 *.orig
 *.rej
-
-pkg/
-*.pkg*
-src/compile_commands.json

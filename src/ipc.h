@@ -6,6 +6,7 @@
 #include <yajl/yajl_gen.h>
 
 #include "IPCClient.h"
+#include "ewm.h"
 #include "ipc-protocol.h"
 
 // clang-format off

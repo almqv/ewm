@@ -1,0 +1,233 @@
+.TH EWM 1 ewm\-VERSION
+.SH NAME
+ewm \- Epsilons window manager
+.SH SYNOPSIS
+.B ewm
+.RB [ \-v ]
+.br
+.B ewm-msg
+.RB [ \-\-socket
+.IR path ]
+.I command
+.RI [ args ...]
+.SH DESCRIPTION
+ewm is a tiling window manager for X, forked from dwm. It manages windows in
+tiled, monocle and floating layouts, plus any layout written in Lua. Windows
+are grouped by tags; selecting tags displays the windows with these tags.
+.P
+Each screen has a bar showing the tags, the layout, the title of the focused
+window and, on the focused screen, the status text (the X root window name,
+set with
+.BR xsetroot (1)
+or a status program such as dwmblocks). The tags of the focused window are
+marked with a filled square, occupied tags with an empty one. A floating
+window has an empty square before its title.
+.SH OPTIONS
+.TP
+.B \-v
+prints version information to stderr, then exits.
+.SH CONFIGURATION
+ewm is configured in Lua 5.4. The first of these files that exists is loaded:
+.IP 1. 3
+.B $EWM_CONFIG
+.IP 2. 3
+.B $XDG_CONFIG_HOME/ewm/config.lua
+(default
+.BR ~/.config/ewm/config.lua )
+.IP 3. 3
+the installed default,
+.B PREFIX/share/ewm/config.lua
+.P
+Afterwards every
+.B *.lua
+file in the
+.B plugins
+directory next to config.lua is run in name order. Modules next to config.lua
+can be loaded with
+.BR require ,
+compiled Lua modules
+.RB ( *.so )
+included. When no configuration can be loaded ewm starts with built-in
+defaults: Mod4\-Return opens
+.B $TERMINAL
+(or xterm), Mod4\-[1..9] views tags, Mod4\-Shift\-r reloads and
+Mod4\-Shift\-e quits.
+.P
+ewm watches these directories and reloads the configuration when a
+.B .lua
+file changes. A reload runs the configuration in a new Lua state; only if it
+loads without errors does it replace the running one, otherwise the error is
+shown in the bar and the previous configuration stays active. Values like
+mfact or gappx that were changed at runtime are kept unless the configured
+value changed.
+.SS The ewm module
+.TP
+.BI ewm.set{ key " = " value ", ...}"
+Settings:
+.BR borderpx ,
+.BR snap ,
+.BR gappx ,
+.B gapmodes
+(list of gap sizes cycled by switchgaps),
+.BR showbar ,
+.BR topbar ,
+.B barpadding
+(extra bar height),
+.BR mfact ,
+.BR nmaster ,
+.BR resizehints ,
+.BR autoreload ,
+.B fonts
+(list of fontconfig names),
+.B colors
+.RB ( {norm={fg,bg,border},\ sel={fg,bg,border}} ),
+.B tags
+(list of up to 31 names),
+.B layouts
+(names in order; the first is the default, unlisted ones follow) and
+.B statusbar
+(name of the process that receives status bar clicks, or false).
+.TP
+.BI ewm.key( mods ", " key ", " fn ", " args... )
+Call
+.IR fn ( args... )
+when
+.I key
+(a keysym name, see
+.BR xev (1))
+is pressed with the modifiers
+.I mods
+("Mod4+Shift", "" or a list; Shift, Control, Mod1\-Mod5, Alt, Super).
+.TP
+.BI ewm.button( click ", " mods ", " button ", " fn ", " args... )
+Mouse bindings.
+.I click
+is one of tagbar, layout, status, title, client or root. A tagbar binding
+without arguments receives the clicked tag number.
+.TP
+.BI ewm.rule{class=, instance=, title=, tags=, floating=, monitor=}
+Applied to new windows whose properties contain the given strings.
+.TP
+.BI ewm.layout( name ", " symbol ", " fn )
+Define a layout.
+.IR fn ( area ", " n )
+gets the window area
+.RB ( x ,
+.BR y ,
+.BR w ,
+.BR h ,
+.BR gap ,
+.BR mfact ,
+.BR nmaster ,
+.BR monitor )
+and the number of tiled windows, and returns a list of
+.B {x, y, w, h}
+boxes (borders included), one per window in stacking order.
+.TP
+.BI ewm.on( event ", " fn )
+Hooks: startup, manage, unmanage and focus. The latter three receive a client
+table (focus may receive nil).
+.TP
+.BI ewm.timer( seconds ", " fn "[, " repeat "])"
+Run
+.I fn
+after
+.IR seconds ;
+returns an id for
+.BI ewm.cancel( id ) .
+.TP
+.B ewm.clients(), ewm.focused(), ewm.monitor()
+Client tables have the fields id, name, class, instance, tags, floating,
+fullscreen, urgent, monitor, x, y, w and h. The monitor table has num, x, y,
+w, h, tags, layout, mfact and nmaster.
+.TP
+.BI ewm.client.focus( id "), .kill(" id "), .settags(" id ", " tags "),"
+.BI .setfloating( id ", " bool "), .setfullscreen(" id ", " bool )
+Act on a specific client.
+.TP
+.BI ewm.setstatus( text )
+Show
+.I text
+until the root window name changes.
+.TP
+Actions
+.BR ewm.spawn ( cmd )
+(a shell command string or an argv list),
+.BR ewm.view ,
+.BR ewm.toggleview ,
+.BR ewm.tag ,
+.BR ewm.toggletag
+(a tag number, a list of numbers or "all"; view without argument returns to
+the previous tags),
+.BR ewm.focusstack ,
+.BR ewm.incnmaster ,
+.BR ewm.focusmon ,
+.BR ewm.tagmon ,
+.BR ewm.setgaps ,
+.BR ewm.switchgaps ,
+.BR ewm.sigstatusbar
+(a number),
+.BR ewm.setmfact
+(a delta, or 1 + the absolute value),
+.BR ewm.setlayout
+(a name; none toggles the previous layout),
+.BR ewm.moveresize
+("dx dy dw dh" with x/y/w/h suffixes; uppercase for absolute values),
+.BR ewm.moveresizeedge
+(t, b, l, r moves floating windows to an edge; T, B, L, R grows them),
+.BR ewm.zoom ,
+.BR ewm.killclient ,
+.BR ewm.togglefloating ,
+.BR ewm.togglefullscreen ,
+.BR ewm.togglebar ,
+.BR ewm.movemouse ,
+.BR ewm.resizemouse ,
+.B ewm.reload
+and
+.BR ewm.quit .
+.TP
+.B ewm.version, ewm.configdir
+The version and the directory of the loaded config.lua.
+.SH AUTOSTART
+.B $XDG_CONFIG_HOME/ewm/autostart.sh
+is executed in the background once ewm has started, if it is executable.
+.SH IPC
+ewm listens on a UNIX socket, by default
+.B $XDG_RUNTIME_DIR/ewm\-$DISPLAY.sock
+(or
+.BR /tmp/ewm\-$UID\-$DISPLAY.sock ),
+and exports its path as
+.B $EWM_SOCKET
+to the programs it starts. The protocol is the one of the dwm-ipc patch.
+.B ewm\-msg
+talks to it:
+.TP
+.B ewm-msg get_monitors | get_tags | get_layouts | get_dwm_client \fIid
+Print state as JSON.
+.TP
+.B ewm-msg run_command \fIcommand \fR[\fIargs\fR]
+Run view, toggleview, tag, toggletag (tag masks), tagmon, focusmon,
+focusstack, incnmaster, zoom, killclient, togglefloating, setmfact,
+setlayoutsafe (a layout address from get_layouts), reload or quit.
+.TP
+.B ewm-msg subscribe \fIevent\fR...
+Print tag_change_event, client_focus_change_event, layout_change_event,
+monitor_focus_change_event, focused_title_change_event and
+focused_state_change_event as they happen.
+.SH ENVIRONMENT
+.TP
+.B EWM_CONFIG
+Configuration file to load instead of the default locations.
+.TP
+.B EWM_SOCKET
+Socket used by ewm\-msg.
+.SH SEE ALSO
+.BR dmenu (1),
+.BR xsetroot (1)
+.SH ISSUES
+Java applications which use the XToolkit/XAWT backend may draw grey windows
+only. Setting the environment variable
+.B _JAVA_AWT_WM_NONREPARENTING=1
+or running
+.B wmname LG3D
+works around this.

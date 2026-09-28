@@ -17,8 +17,7 @@
 #include "util.h"
 #include "yajl_dumps.h"
 
-// This file is #included into dwm.c, so every file-scope name is prefixed
-// to avoid aliasing dwm.c's globals (e.g. its own epoll_fd).
+// ipc_ prefixes keep these apart from ewm.c's globals of the same meaning
 static struct sockaddr_un ipc_sockaddr;
 static struct epoll_event ipc_sock_epoll_event;
 static IPCClientList ipc_clients = NULL;
@@ -642,7 +641,7 @@ static void ipc_get_monitors(IPCClient *c) {
 static void ipc_get_tags(IPCClient *c) {
 	yajl_gen gen;
 	ipc_init_message(&gen);
-	dump_tags(gen, tags, LENGTH(tags));
+	dump_tags(gen, cfg.tags, cfg.ntags);
 
 	ipc_reply_prepare_send_message(gen, c, IPC_TYPE_GET_TAGS);
 }
@@ -654,7 +653,7 @@ static void ipc_get_tags(IPCClient *c) {
 static void ipc_get_layouts(IPCClient *c) {
 	yajl_gen gen;
 	ipc_init_message(&gen);
-	dump_layouts(gen, layouts, LENGTH(layouts));
+	dump_layouts(gen, cfg.layouts, cfg.nlayouts);
 
 	ipc_reply_prepare_send_message(gen, c, IPC_TYPE_GET_LAYOUTS);
 }

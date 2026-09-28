@@ -40,7 +40,7 @@ void drw_font_getexts(Fnt *font, const char *text, unsigned int len,
                       unsigned int *w, unsigned int *h);
 
 /* Colorscheme abstraction */
-void drw_clr_create(Drw *drw, Clr *dest, const char *clrname);
+int drw_clr_create(Drw *drw, Clr *dest, const char *clrname);
 Clr *drw_scm_create(Drw *drw, const char *clrnames[], size_t clrcount);
 
 /* Cursor abstraction */

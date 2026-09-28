@@ -3,6 +3,8 @@
 #include <math.h>
 #include <stdint.h>
 
+#include "util.h"
+
 /**
  * Length of the valid UTF-8 sequence starting at s (at most n bytes
  * available), or 0 if the sequence is invalid (overlong, surrogate, out of
@@ -87,7 +89,7 @@ int dump_tag(yajl_gen gen, const char *name, const int tag_mask) {
 	return 0;
 }
 
-int dump_tags(yajl_gen gen, const char *tags[], int tags_len) {
+int dump_tags(yajl_gen gen, char *const tags[], int tags_len) {
 	// clang-format off
   YARR(
     for (int i = 0; i < tags_len; i++)
