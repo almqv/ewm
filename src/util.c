@@ -16,6 +16,19 @@ void *ecalloc(size_t nmemb, size_t size) {
 	return p;
 }
 
+int configpath(char *buf, size_t len, const char *name) {
+	const char *base = getenv("XDG_CONFIG_HOME"), *home;
+	int n;
+
+	if (base && *base)
+		n = snprintf(buf, len, "%s/ewm/%s", base, name);
+	else if ((home = getenv("HOME")) && *home)
+		n = snprintf(buf, len, "%s/.config/ewm/%s", home, name);
+	else
+		return -1;
+	return n < 0 || (size_t) n >= len ? -1 : 0;
+}
+
 void die(const char *fmt, ...) {
 	va_list ap;
 

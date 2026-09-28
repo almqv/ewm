@@ -103,7 +103,8 @@ static int ipc_create_socket(const char *filename) {
 	struct stat st;
 	const size_t addr_size = sizeof(struct sockaddr_un);
 	const int sock_type    = SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC;
-	int fd;
+	int fd, res;
+	mode_t old_umask;
 
 	normalizepath(filename, &normal_filename);
 
@@ -152,7 +153,11 @@ static int ipc_create_socket(const char *filename) {
 
 	DEBUG("Created socket at %s\n", ipc_sockaddr.sun_path);
 
-	if (bind(fd, (const struct sockaddr *) &ipc_sockaddr, addr_size) == -1) {
+	/* only the owner may connect: the socket runs WM commands */
+	old_umask = umask(077);
+	res       = bind(fd, (const struct sockaddr *) &ipc_sockaddr, addr_size);
+	umask(old_umask);
+	if (res == -1) {
 		fprintf(stderr, "Failed to bind socket to %s: %s\n",
 		        ipc_sockaddr.sun_path, strerror(errno));
 		close(fd);

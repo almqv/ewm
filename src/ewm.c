@@ -1,14 +1,13 @@
 /* See LICENSE file for copyright and license details.
  *
- * dynamic window manager is designed like any other X client as well. It is
- * driven through handling X events. In contrast to other X clients, a window
- * manager selects for SubstructureRedirectMask on the root window, to receive
- * events about window (dis-)appearance. Only one X connection at a time is
- * allowed to select for this event mask.
+ * ewm is a fork of dwm, the dynamic window manager. Like any other X client
+ * it is driven through handling X events. In contrast to other X clients, a
+ * window manager selects for SubstructureRedirectMask on the root window, to
+ * receive events about window (dis-)appearance. Only one X connection at a
+ * time is allowed to select for this event mask.
  *
- * The event handlers of dwm are organized in an array which is accessed
- * whenever a new event has been fetched. This allows event dispatching
- * in O(1) time.
+ * The event handlers are organized in an array which is accessed whenever a
+ * new event has been fetched. This allows event dispatching in O(1) time.
  *
  * Each child of the root window is called a client, except windows which have
  * set the override_redirect flag. Clients are organized in a linked client
@@ -28,6 +27,7 @@
 #include <X11/cursorfont.h>
 #include <X11/keysym.h>
 #include <errno.h>
+#include <limits.h>
 #include <locale.h>
 #include <signal.h>
 #include <stdarg.h>
@@ -35,8 +35,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/epoll.h>
+#include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/un.h>
 #include <sys/wait.h>
 #include <unistd.h>
 #ifdef XINERAMA
@@ -297,11 +299,7 @@ static int xerrorstart(Display *dpy, XErrorEvent *ee);
 static void zoom(const Arg *arg);
 
 /* variables */
-static const char autostartblocksh[] = "autostart_blocking.sh";
-static const char autostartsh[]      = "autostart.sh";
-static const char broken[]           = "broken";
-static const char dwmdir[]           = "dwm";
-static const char localshare[]       = ".local/share";
+static const char broken[] = "broken";
 static char stext[256];
 static int statusw;
 static int statussig;
@@ -1704,80 +1702,33 @@ void run(void) {
 	}
 }
 
+/* common setup of forked children before exec */
+static void childsetup(void) {
+	struct sigaction sa;
+
+	if (dpy)
+		close(ConnectionNumber(dpy));
+	setsid();
+	sigemptyset(&sa.sa_mask);
+	sa.sa_flags   = 0;
+	sa.sa_handler = SIG_DFL;
+	sigaction(SIGCHLD, &sa, NULL);
+}
+
+/* start $XDG_CONFIG_HOME/ewm/autostart.sh (~/.config/ewm) in the background */
 void runautostart(void) {
-	char *pathpfx;
-	char *path;
-	char *xdgdatahome;
-	char *home;
-	struct stat sb;
+	char path[PATH_MAX];
 
-	if ((home = getenv("HOME")) == NULL)
-		/* this is almost impossible */
+	if (configpath(path, sizeof(path), "autostart.sh") < 0
+	    || access(path, X_OK) != 0)
 		return;
-
-	/* if $XDG_DATA_HOME is set and not empty, use $XDG_DATA_HOME/dwm,
-	 * otherwise use ~/.local/share/dwm as autostart script directory
-	 */
-	xdgdatahome = getenv("XDG_DATA_HOME");
-	if (xdgdatahome != NULL && *xdgdatahome != '\0') {
-		/* space for path segments, separators and nul */
-		pathpfx = ecalloc(1, strlen(xdgdatahome) + strlen(dwmdir) + 2);
-
-		if (sprintf(pathpfx, "%s/%s", xdgdatahome, dwmdir) <= 0) {
-			free(pathpfx);
-			return;
-		}
-	} else {
-		/* space for path segments, separators and nul */
-		pathpfx = ecalloc(1, strlen(home) + strlen(localshare)
-		                         + strlen(dwmdir) + 3);
-
-		if (sprintf(pathpfx, "%s/%s/%s", home, localshare, dwmdir) < 0) {
-			free(pathpfx);
-			return;
-		}
+	if (fork() == 0) {
+		childsetup();
+		execl(path, path, (char *) NULL);
+		fprintf(stderr, "ewm: execl %s", path);
+		perror(" failed");
+		exit(EXIT_FAILURE);
 	}
-
-	/* check if the autostart script directory exists */
-	if (!(stat(pathpfx, &sb) == 0 && S_ISDIR(sb.st_mode))) {
-		/* the XDG conformant path does not exist or is no directory
-		 * so we try ~/.dwm instead
-		 */
-		char *pathpfx_new =
-		    realloc(pathpfx, strlen(home) + strlen(dwmdir) + 3);
-		if (pathpfx_new == NULL) {
-			free(pathpfx);
-			return;
-		}
-		pathpfx = pathpfx_new;
-
-		if (sprintf(pathpfx, "%s/.%s", home, dwmdir) <= 0) {
-			free(pathpfx);
-			return;
-		}
-	}
-
-	/* try the blocking script first */
-	path = ecalloc(1, strlen(pathpfx) + strlen(autostartblocksh) + 2);
-	if (sprintf(path, "%s/%s", pathpfx, autostartblocksh) <= 0) {
-		free(path);
-		free(pathpfx);
-	}
-
-	if (access(path, X_OK) == 0)
-		system(path);
-
-	/* now the non-blocking script */
-	if (sprintf(path, "%s/%s", pathpfx, autostartsh) <= 0) {
-		free(path);
-		free(pathpfx);
-	}
-
-	if (access(path, X_OK) == 0)
-		system(strcat(path, " &"));
-
-	free(pathpfx);
-	free(path);
 }
 
 void scan(void) {
@@ -2005,7 +1956,7 @@ void setup(void) {
 	XChangeProperty(dpy, wmcheckwin, netatom[NetWMCheck], XA_WINDOW, 32,
 	                PropModeReplace, (unsigned char *) &wmcheckwin, 1);
 	XChangeProperty(dpy, wmcheckwin, netatom[NetWMName], utf8string, 8,
-	                PropModeReplace, (unsigned char *) "dwm", 3);
+	                PropModeReplace, (unsigned char *) "ewm", 3);
 	XChangeProperty(dpy, root, netatom[NetWMCheck], XA_WINDOW, 32,
 	                PropModeReplace, (unsigned char *) &wmcheckwin, 1);
 	/* EWMH support per view */
@@ -2027,6 +1978,7 @@ void setup(void) {
 
 void setupepoll(void) {
 	struct epoll_event dpy_event = {.events = EPOLLIN};
+	char sockpath[sizeof(((struct sockaddr_un *) 0)->sun_path)];
 
 	if ((epoll_fd = epoll_create1(EPOLL_CLOEXEC)) == -1)
 		die("epoll_create1:");
@@ -2036,9 +1988,14 @@ void setupepoll(void) {
 	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, dpy_fd, &dpy_event))
 		die("epoll_ctl: cannot add display fd:");
 
-	if (ipc_init(ipcsockpath, epoll_fd, ipccommands, LENGTH(ipccommands))
-	    < 0)
+	/* the socket follows $DISPLAY; an inherited $EWM_SOCKET (e.g. from a
+	 * nested session) must not redirect it. Children get our path. */
+	unsetenv("EWM_SOCKET");
+	if (ipc_socket_path(sockpath, sizeof(sockpath)) < 0
+	    || ipc_init(sockpath, epoll_fd, ipccommands, LENGTH(ipccommands)) < 0)
 		fputs("ewm: failed to initialize IPC\n", stderr);
+	else
+		setenv("EWM_SOCKET", sockpath, 1);
 }
 
 void seturgent(Client *c, int urg) {
@@ -2086,17 +2043,7 @@ void spawn(const Arg *arg) {
 	if (arg->v == dmenucmd)
 		dmenumon[0] = '0' + selmon->num;
 	if (fork() == 0) {
-		struct sigaction sa;
-
-		if (dpy)
-			close(ConnectionNumber(dpy));
-		setsid();
-
-		sigemptyset(&sa.sa_mask);
-		sa.sa_flags   = 0;
-		sa.sa_handler = SIG_DFL;
-		sigaction(SIGCHLD, &sa, NULL);
-
+		childsetup();
 		execvp(((char **) arg->v)[0], (char **) arg->v);
 		fprintf(stderr, "ewm: execvp %s", ((char **) arg->v)[0]);
 		perror(" failed");
@@ -2256,7 +2203,7 @@ void updatebars(void) {
 	                           .background_pixmap = ParentRelative,
 	                           .event_mask = ButtonPressMask | ExposureMask};
 
-	XClassHint ch = {"dwm", "dwm"};
+	XClassHint ch = {"ewm", "ewm"};
 	for (m = mons; m; m = m->next) {
 		if (m->barwin)
 			continue;
@@ -2428,7 +2375,7 @@ void updatesizehints(Client *c) {
 
 void updatestatus(void) {
 	if (!gettextprop(root, XA_WM_NAME, stext, sizeof(stext))) {
-		strcpy(stext, "dwm-" VERSION);
+		strcpy(stext, "ewm-" VERSION);
 		statusw = TEXTW(stext) - lrpad + 2;
 	} else {
 		char *text, *s, ch;
@@ -2543,7 +2490,7 @@ int xerror(Display *dpy, XErrorEvent *ee) {
 	    || (ee->request_code == X_GrabKey && ee->error_code == BadAccess)
 	    || (ee->request_code == X_CopyArea && ee->error_code == BadDrawable))
 		return 0;
-	fprintf(stderr, "dwm: fatal error: request code=%d, error code=%d\n",
+	fprintf(stderr, "ewm: fatal error: request code=%d, error code=%d\n",
 	        ee->request_code, ee->error_code);
 	return xerrorxlib(dpy, ee); /* may call exit */
 }
@@ -2555,7 +2502,7 @@ int xerrordummy(Display *dpy, XErrorEvent *ee) {
 /* Startup Error handler to check if another window manager
  * is already running. */
 int xerrorstart(Display *dpy, XErrorEvent *ee) {
-	die("dwm: another window manager is already running");
+	die("ewm: another window manager is already running");
 	return -1;
 }
 
@@ -2573,13 +2520,13 @@ void zoom(const Arg *arg) {
 
 int main(int argc, char *argv[]) {
 	if (argc == 2 && !strcmp("-v", argv[1]))
-		die("dwm-" VERSION);
+		die("ewm-" VERSION);
 	else if (argc != 1)
-		die("usage: dwm [-v]");
+		die("usage: ewm [-v]");
 	if (!setlocale(LC_CTYPE, "") || !XSupportsLocale())
 		fputs("warning: no locale support\n", stderr);
 	if (!(dpy = XOpenDisplay(NULL)))
-		die("dwm: cannot open display");
+		die("ewm: cannot open display");
 	checkotherwm();
 	setup();
 #ifdef __OpenBSD__

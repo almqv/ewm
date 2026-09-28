@@ -188,7 +188,6 @@ static Button buttons[] = {
     {ClkTagBar, MODKEY, Button3, toggletag, {0}},
 };
 
-static const char *ipcsockpath  = "/tmp/dwm.sock";
 static IPCCommand ipccommands[] = {
     IPCCOMMAND(view, 1, {ARG_TYPE_UINT}),
     IPCCOMMAND(toggleview, 1, {ARG_TYPE_UINT}),

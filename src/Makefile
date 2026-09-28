@@ -1,7 +1,7 @@
 # ewm - Epsilons Window Manager
 include config.mk
 
-SRC = drw.c dwm.c util.c 
+SRC = drw.c ewm.c util.c
 OBJ = ${SRC:.c=.o}
 
 all: options ewm ewm-msg
@@ -23,11 +23,11 @@ config.h:
 ewm: ${OBJ}
 	${CC} -o $@ ${OBJ} ${LDFLAGS}
 
-ewm-msg: dwm-msg.o
+ewm-msg: ewm-msg.o
 	${CC} -o $@ $< ${LDFLAGS}
 
 clean:
-	rm -f ewm ewm-msg ${OBJ} ewm-${VERSION}.tar.gz
+	rm -f ewm ewm-msg ${OBJ} ewm-msg.o ewm-${VERSION}.tar.gz
 
 dist: clean
 	mkdir -p ewm-${VERSION}

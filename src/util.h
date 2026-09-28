@@ -15,3 +15,6 @@ void *ecalloc(size_t nmemb, size_t size);
 int normalizepath(const char *path, char **normal);
 int mkdirp(const char *path);
 int parentdir(const char *path, char **parent);
+/* $XDG_CONFIG_HOME/ewm/<name>, else $HOME/.config/ewm/<name>; -1 if unset
+ * or truncated */
+int configpath(char *buf, size_t len, const char *name);

@@ -1,7 +1,7 @@
 /* See LICENSE file for copyright and license details.
  *
  * Wire protocol shared by the ewm IPC server (ipc.c) and the ewm-msg client
- * (dwm-msg.c). This header must stay dependency-free (libc only).
+ * (ewm-msg.c). This header must stay dependency-free (libc only).
  *
  * Every message is a dwm_ipc_header_t immediately followed by `size` bytes
  * of payload. Payloads sent by the server are JSON and include a trailing
