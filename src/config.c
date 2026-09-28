@@ -69,7 +69,6 @@ static const Action actions[] = {
     {"setgaps", setgaps, AInt},
     {"setlayout", setlayout, ALayout},
     {"setmfact", setmfact, AFloat},
-    {"sigstatusbar", sigstatusbar, AInt},
     {"spawn", spawn, ASpawn},
     {"switchgaps", switchgaps, AInt},
     {"tag", tag, ATags},
@@ -189,7 +188,6 @@ void config_free(Config *c) {
 	int s, j;
 
 	free(c->gapmodes);
-	free(c->statusbar);
 	freestrv(c->fonts, c->nfonts);
 	for (s = 0; s < SchemeLast; s++)
 		for (j = 0; j < 3; j++)
@@ -585,10 +583,6 @@ static int l_set(lua_State *l) {
 			c->mfact = luaL_checknumber(l, -1);
 			if (c->mfact < 0.05 || c->mfact > 0.95)
 				return luaL_error(l, "mfact must be between 0.05 and 0.95");
-		} else if (!strcmp(k, "statusbar")) {
-			free(c->statusbar);
-			c->statusbar =
-			    lua_toboolean(l, -1) ? xstrdup(luaL_checkstring(l, -1)) : NULL;
 		} else if (!strcmp(k, "fonts"))
 			setstrv(l, k, &c->fonts, &c->nfonts, 32);
 		else if (!strcmp(k, "tags"))

@@ -18,8 +18,10 @@ are grouped by tags; selecting tags displays the windows with these tags.
 Each screen has a bar showing the tags, the layout, the title of the focused
 window and, on the focused screen, the status text (the X root window name,
 set with
-.BR xsetroot (1)
-or a status program such as dwmblocks). The tags of the focused window are
+.BR xsetroot (1),
+or
+.BR ewm.setstatus ).
+The tags of the focused window are
 marked with a filled square, occupied tags with an empty one. A floating
 window has an empty square before its title.
 .SH OPTIONS
@@ -84,9 +86,7 @@ Settings:
 .B tags
 (list of up to 31 names),
 .B layouts
-(names in order; the first is the default, unlisted ones follow) and
-.B statusbar
-(name of the process that receives status bar clicks, or false).
+(names in order; the first is the default, unlisted ones follow).
 .TP
 .BI ewm.key( mods ", " key ", " fn ", " args... )
 Call
@@ -164,8 +164,7 @@ the previous tags),
 .BR ewm.focusmon ,
 .BR ewm.tagmon ,
 .BR ewm.setgaps ,
-.BR ewm.switchgaps ,
-.BR ewm.sigstatusbar
+.BR ewm.switchgaps
 (a number),
 .BR ewm.setmfact
 (a delta, or 1 + the absolute value),

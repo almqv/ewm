@@ -26,7 +26,6 @@
 #include <X11/Xutil.h>
 #include <X11/cursorfont.h>
 #include <X11/keysym.h>
-#include <dirent.h>
 #include <errno.h>
 #include <limits.h>
 #include <locale.h>
@@ -113,7 +112,6 @@ static void focusin(XEvent *e);
 static Atom getatomprop(Client *c, Atom prop);
 static int getrootptr(int *x, int *y);
 static long getstate(Window w);
-static pid_t getstatusbarpid(void);
 static int gettextprop(Window w, Atom atom, char *text, unsigned int size);
 static void handlexevents(void);
 static void keypress(XEvent *e);
@@ -158,9 +156,7 @@ static int xerrorstart(Display *dpy, XErrorEvent *ee);
 /* variables */
 static const char broken[] = "broken";
 static char stext[256];
-static int statusw;
-static int statussig;
-static pid_t statuspid = -1;
+static int statusw; /* width of stext in the bar */
 static int screen;
 static int sw, sh;      /* X display screen geometry width, height */
 static int bh, blw = 0; /* bar geometry */
@@ -382,7 +378,6 @@ void buttonpress(XEvent *e) {
 	Client *c;
 	Monitor *m;
 	XButtonPressedEvent *ev = &e->xbutton;
-	char *text, *s, ch;
 
 	click = ClkRootWin;
 	/* focus monitor if necessary */
@@ -402,23 +397,9 @@ void buttonpress(XEvent *e) {
 			tagnum = i + 1;
 		} else if (ev->x < x + blw)
 			click = ClkLtSymbol;
-		else if (ev->x > selmon->ww - statusw) {
-			x         = selmon->ww - statusw;
-			click     = ClkStatusText;
-			statussig = 0;
-			for (text = s = stext; *s && x <= ev->x; s++) {
-				if ((unsigned char) (*s) < ' ') {
-					ch = *s;
-					*s = '\0';
-					x += TEXTW(text) - lrpad;
-					*s   = ch;
-					text = s + 1;
-					if (x >= ev->x)
-						break;
-					statussig = ch;
-				}
-			}
-		} else
+		else if (ev->x > selmon->ww - statusw)
+			click = ClkStatusText;
+		else
 			click = ClkWinTitle;
 	} else if ((c = wintoclient(ev->window))) {
 		focus(c);
@@ -697,24 +678,9 @@ void drawbar(Monitor *m) {
 
 	/* draw status first so it can be overdrawn by tags later */
 	if (m == selmon) { /* status is only drawn on selected monitor */
-		char *text, *s, ch;
 		drw_setscheme(drw, scheme[SchemeNorm]);
-
-		x = 0;
-		for (text = s = stext; *s; s++) {
-			if ((unsigned char) (*s) < ' ') {
-				ch = *s;
-				*s = '\0';
-				tw = TEXTW(text) - lrpad;
-				drw_text(drw, m->ww - statusw + x, 0, tw, bh, 0, text, 0);
-				x += tw;
-				*s   = ch;
-				text = s + 1;
-			}
-		}
-		tw = TEXTW(text) - lrpad + 2;
-		drw_text(drw, m->ww - statusw + x, 0, tw, bh, 0, text, 0);
 		tw = statusw;
+		drw_text(drw, m->ww - tw, 0, tw, bh, 0, stext, 0);
 	}
 
 	for (c = m->clients; c; c = c->next) {
@@ -877,45 +843,6 @@ Atom getatomprop(Client *c, Atom prop) {
 		XFree(p);
 	}
 	return atom;
-}
-
-/* whether the basename of argv[0] of process pid is name */
-static int cmdlineis(pid_t pid, const char *name) {
-	char path[64], buf[256], *base;
-	size_t n;
-	FILE *fp;
-
-	snprintf(path, sizeof(path), "/proc/%ld/cmdline", (long) pid);
-	if (!(fp = fopen(path, "r")))
-		return 0;
-	n = fread(buf, 1, sizeof(buf) - 1, fp);
-	fclose(fp);
-	buf[n] = '\0'; /* argv[0] ends at the first NUL */
-	base   = strrchr(buf, '/');
-	return n > 0 && !strcmp(base ? base + 1 : buf, name);
-}
-
-pid_t getstatusbarpid(void) {
-	DIR *dir;
-	struct dirent *e;
-	char *end;
-	long pid;
-
-	if (!cfg.statusbar || !*cfg.statusbar)
-		return -1;
-	if (statuspid > 0 && cmdlineis(statuspid, cfg.statusbar))
-		return statuspid;
-	if (!(dir = opendir("/proc")))
-		return -1;
-	while ((e = readdir(dir))) {
-		pid = strtol(e->d_name, &end, 10);
-		if (!*end && pid > 0 && cmdlineis(pid, cfg.statusbar)) {
-			closedir(dir);
-			return pid;
-		}
-	}
-	closedir(dir);
-	return -1;
 }
 
 int getrootptr(int *x, int *y) {
@@ -2017,18 +1944,6 @@ void showhide(Client *c) {
 	}
 }
 
-void sigstatusbar(const Arg *arg) {
-	union sigval sv;
-
-	if (!statussig || SIGRTMIN + statussig > SIGRTMAX)
-		return;
-	sv.sival_int = arg->i;
-	if ((statuspid = getstatusbarpid()) <= 0)
-		return;
-
-	sigqueue(statuspid, SIGRTMIN + statussig, sv);
-}
-
 void spawn(const Arg *arg) {
 	if (fork() == 0) {
 		childsetup();
@@ -2370,21 +2285,8 @@ void updatesizehints(Client *c) {
 	    (c->maxw && c->maxh && c->maxw == c->minw && c->maxh == c->minh);
 }
 
-/* width of stext; control characters separate clickable segments */
 static void measurestatus(void) {
-	char *text, *s, ch;
-
-	statusw = 0;
-	for (text = s = stext; *s; s++) {
-		if ((unsigned char) (*s) < ' ') {
-			ch = *s;
-			*s = '\0';
-			statusw += TEXTW(text) - lrpad;
-			*s   = ch;
-			text = s + 1;
-		}
-	}
-	statusw += TEXTW(text) - lrpad + 2;
+	statusw = TEXTW(stext) - lrpad + 2;
 }
 
 void updatestatus(void) {

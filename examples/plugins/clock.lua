@@ -1,4 +1,4 @@
--- Minimal status text without dwmblocks: the time, refreshed every 30s.
+-- Status text: the time, refreshed every 30s.
 -- Install: copy to ~/.config/ewm/plugins/clock.lua
 local ewm = require("ewm")
 

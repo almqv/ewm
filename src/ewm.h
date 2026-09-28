@@ -142,7 +142,6 @@ typedef struct {
 	int nmaster;             /* number of clients in master area */
 	int resizehints;         /* 1 means respect size hints in tiled resizals */
 	int autoreload;          /* reload when the configuration changes */
-	char *statusbar;         /* process signalled by status bar clicks */
 	char **fonts;
 	size_t nfonts;
 	char *colors[SchemeLast][3]; /* fg, bg, border */
@@ -181,7 +180,6 @@ void setgaps(const Arg *arg);
 void setlayout(const Arg *arg);
 void setlayoutsafe(const Arg *arg);
 void setmfact(const Arg *arg);
-void sigstatusbar(const Arg *arg);
 void spawn(const Arg *arg);
 void switchgaps(const Arg *arg);
 void tag(const Arg *arg);
