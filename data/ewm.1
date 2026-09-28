@@ -27,16 +27,16 @@ window has an empty square before its title.
 .B \-v
 prints version information to stderr, then exits.
 .SH CONFIGURATION
-ewm is configured in Lua 5.4. The first of these files that exists is loaded:
-.IP 1. 3
-.B $EWM_CONFIG
-.IP 2. 3
+ewm is configured in Lua (5.3 or newer) through
 .B $XDG_CONFIG_HOME/ewm/config.lua
 (default
-.BR ~/.config/ewm/config.lua )
-.IP 3. 3
-the installed default,
-.B PREFIX/share/ewm/config.lua
+.BR ~/.config/ewm/config.lua ),
+or
+.B $EWM_CONFIG
+if set. On the first start it is created from the installed default,
+.BR PREFIX/share/ewm/config.lua .
+Example plugins are installed in
+.BR PREFIX/share/ewm/examples .
 .P
 Afterwards every
 .B *.lua
@@ -186,11 +186,15 @@ the previous tags),
 and
 .BR ewm.quit .
 .TP
+.BI ewm.autostart( cmd )
+Run
+.I cmd
+(like
+.BR ewm.spawn )
+once when ewm starts; ignored when the configuration is reloaded.
+.TP
 .B ewm.version, ewm.configdir
 The version and the directory of the loaded config.lua.
-.SH AUTOSTART
-.B $XDG_CONFIG_HOME/ewm/autostart.sh
-is executed in the background once ewm has started, if it is executable.
 .SH IPC
 ewm listens on a UNIX socket, by default
 .B $XDG_RUNTIME_DIR/ewm\-$DISPLAY.sock

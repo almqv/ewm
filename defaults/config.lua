@@ -1,6 +1,6 @@
--- ewm configuration. Copy to ~/.config/ewm/config.lua and edit; ewm
--- reloads it (and plugins/*.lua next to it) whenever a file is saved.
--- See ewm(1) for the complete API.
+-- ewm configuration: ~/.config/ewm/config.lua, created from this default
+-- on first start. ewm reloads it (and plugins/*.lua next to it) whenever a
+-- file is saved. See ewm(1) for the complete API.
 local ewm = require("ewm")
 
 ewm.set {
@@ -23,8 +23,43 @@ ewm.set {
 -- xprop(1): WM_CLASS(STRING) = instance, class; WM_NAME(STRING) = title
 ewm.rule { class = "spotify", tags = 9 }
 
+-- whether a program is in $PATH
+local function have(name)
+	for dir in (os.getenv("PATH") or ""):gmatch("[^:]+") do
+		local f = io.open(dir .. "/" .. name)
+		if f then
+			f:close()
+			return true
+		end
+	end
+	return false
+end
+
+-- first installed program of a list
+local function pick(names)
+	for _, name in ipairs(names) do
+		if have(name) then
+			return name
+		end
+	end
+	return names[#names]
+end
+
+-- programs started once per session (not again on reload)
+if have("dwmblocks") then
+	ewm.autostart("pkill -x dwmblocks; exec dwmblocks")
+end
+if have("picom") then
+	ewm.autostart("pkill -x picom; while pgrep -u \"$(id -u)\" -x picom >/dev/null; do sleep 1; done; exec picom")
+end
+if have("nitrogen") then
+	ewm.autostart { "nitrogen", "--restore" }
+end
+-- ewm.autostart { "setxkbmap", "us" }
+
 local mod = "Mod4"
 local key = ewm.key
+local terminal = os.getenv("TERMINAL") or pick { "alacritty", "kitty", "st", "x-terminal-emulator", "xterm" }
 
 local function dmenu()
 	ewm.spawn { "dmenu_run", "-m", tostring(ewm.monitor().num), "-p", "Run $", "-z", "512" }
@@ -39,7 +74,7 @@ key(mod, "u", ewm.spawn, "playerctl play-pause")
 
 -- programs
 key(mod, "d", dmenu)
-key(mod, "Return", ewm.spawn, { "alacritty" })
+key(mod, "Return", ewm.spawn, { terminal })
 key(mod, "e", ewm.spawn, { "firefox" })
 key(mod .. "+Shift", "l", ewm.spawn, { "slock" })
 key(mod, "Print", ewm.spawn, { "flameshot", "gui" })

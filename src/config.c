@@ -11,6 +11,7 @@
 #include <X11/Xutil.h>
 #include <dirent.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <lauxlib.h>
 #include <limits.h>
 #include <lua.h>
@@ -32,6 +33,7 @@
 #endif
 
 #define HOOKS     "ewm.hooks" /* registry: event name -> list of functions */
+#define AUTOSTART "ewm.autostart" /* registry: commands for config_start */
 #define DEBOUNCE  150000000L  /* ns to wait for more changes before reload */
 #define WATCHMASK                                                            \
 	(IN_CLOSE_WRITE | IN_MOVED_TO | IN_MOVED_FROM | IN_CREATE | IN_DELETE)
@@ -742,8 +744,10 @@ static int l_on(lua_State *l) {
 }
 
 static void armtimer(Timer *t) {
-	struct epoll_event ev = {.events = EPOLLIN, .data.fd = t->fd};
+	/* zero all of data: only its fd member is set */
+	struct epoll_event ev = {.events = EPOLLIN, .data.u64 = 0};
 
+	ev.data.fd = t->fd;
 	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, t->fd, &ev) < 0)
 		fprintf(stderr, "ewm: cannot watch timer: %s\n", strerror(errno));
 }
@@ -892,11 +896,25 @@ static int l_client_setfullscreen(lua_State *l) {
 	return 0;
 }
 
+/* ewm.autostart(cmd): spawn cmd (like ewm.spawn) once the WM has started;
+ * ignored when the configuration is reloaded later */
+static int l_autostart(lua_State *l) {
+	luaL_argcheck(l, lua_isstring(l, 1) || lua_istable(l, 1), 1,
+	              "command string or argv table expected");
+	if (started)
+		return 0;
+	lua_getfield(l, LUA_REGISTRYINDEX, AUTOSTART);
+	lua_pushvalue(l, 1);
+	lua_rawseti(l, -2, luaL_len(l, -2) + 1);
+	return 0;
+}
+
 static int openewm(lua_State *l) {
 	static const luaL_Reg funcs[] = {
 	    {"set", l_set},           {"key", l_key},         {"button", l_button},
 	    {"rule", l_rule},         {"layout", l_layout},   {"on", l_on},
 	    {"timer", l_timer},       {"cancel", l_cancel},   {"clients", l_clients},
+	    {"autostart", l_autostart},
 	    {"focused", l_focused},   {"monitor", l_monitor}, {"setstatus", l_setstatus},
 	    {NULL, NULL},
 	};
@@ -983,15 +1001,53 @@ static int orderlayouts(Config *c) {
 	return 0;
 }
 
-/* locate config.lua: $EWM_CONFIG, ~/.config/ewm, then the installed default */
-static int findconfig(char *path, size_t len) {
+/* copy the installed default config.lua to dst, creating its directory */
+static int installdefault(const char *dst) {
+	char src[PATH_MAX], dir[PATH_MAX], buf[4096], *slash;
+	FILE *in, *out = NULL;
+	size_t n;
+	int fd, err = 0;
+
+	snprintf(src, sizeof(src), "%s/config.lua", DATADIR);
+	if (!(in = fopen(src, "r")))
+		return -1;
+	snprintf(dir, sizeof(dir), "%s", dst);
+	if ((slash = strrchr(dir, '/'))) {
+		*slash = '\0';
+		mkdirp(dir);
+	}
+	if ((fd = open(dst, O_WRONLY | O_CREAT | O_EXCL, 0644)) < 0
+	    || !(out = fdopen(fd, "w"))) {
+		if (fd >= 0)
+			close(fd);
+		fclose(in);
+		return -1;
+	}
+	while ((n = fread(buf, 1, sizeof(buf), in)) > 0)
+		if (fwrite(buf, 1, n, out) != n)
+			err = 1;
+	err |= ferror(in) | (fclose(out) != 0);
+	fclose(in);
+	if (err) {
+		unlink(dst);
+		return -1;
+	}
+	fprintf(stderr, "ewm: created %s from %s\n", dst, src);
+	return 0;
+}
+
+/* locate config.lua: $EWM_CONFIG, else ~/.config/ewm/config.lua, which is
+ * created from the installed default at startup (install); the default
+ * itself is only used if that fails */
+static int findconfig(char *path, size_t len, int install) {
 	const char *env = getenv("EWM_CONFIG");
 
 	if (env && *env) {
 		snprintf(path, len, "%s", env);
 		return 0;
 	}
-	if (configpath(path, len, "config.lua") == 0 && access(path, R_OK) == 0)
+	if (configpath(path, len, "config.lua") == 0
+	    && (access(path, R_OK) == 0 || (install && installdefault(path) == 0)))
 		return 0;
 	snprintf(path, len, "%s/config.lua", DATADIR);
 	return access(path, R_OK);
@@ -999,12 +1055,12 @@ static int findconfig(char *path, size_t len) {
 
 /* build *out and a Lua state from config.lua; 0 on success, 1 if there is
  * no config.lua, -1 on errors (reported) */
-static int load(Config *out, lua_State **outl) {
+static int load(Config *out, lua_State **outl, int install) {
 	char path[PATH_MAX], dir[PATH_MAX], *slash;
 	lua_State *l;
 	int res;
 
-	if (findconfig(path, sizeof(path)) != 0)
+	if (findconfig(path, sizeof(path), install) != 0)
 		return 1;
 	snprintf(dir, sizeof(dir), "%s", path);
 	if ((slash = strrchr(dir, '/')))
@@ -1017,6 +1073,8 @@ static int load(Config *out, lua_State **outl) {
 	luaL_openlibs(l);
 	lua_newtable(l);
 	lua_setfield(l, LUA_REGISTRYINDEX, HOOKS);
+	lua_newtable(l);
+	lua_setfield(l, LUA_REGISTRYINDEX, AUTOSTART);
 	/* require() finds modules next to config.lua */
 	lua_getglobal(l, "package");
 	lua_pushfstring(l, "%s/?.lua;%s/?/init.lua;", dir, dir);
@@ -1065,8 +1123,9 @@ static int load(Config *out, lua_State **outl) {
 /* inotify on the configuration directories */
 
 static void watchfd(int fd, int add) {
-	struct epoll_event ev = {.events = EPOLLIN, .data.fd = fd};
+	struct epoll_event ev = {.events = EPOLLIN, .data.u64 = 0};
 
+	ev.data.fd = fd;
 	epoll_ctl(epoll_fd, add ? EPOLL_CTL_ADD : EPOLL_CTL_DEL, fd, &ev);
 }
 
@@ -1187,7 +1246,7 @@ static void droptimers(lua_State *owner) {
 }
 
 void config_init(void) {
-	int res = load(&cfg, &L);
+	int res = load(&cfg, &L, 1);
 
 	if (res == 0)
 		return;
@@ -1219,6 +1278,7 @@ void config_fallback(const char *reason) {
 
 void config_start(void) {
 	Timer *t;
+	int i, n;
 
 	started = 1;
 	for (t = timers; t; t = t->next)
@@ -1227,6 +1287,20 @@ void config_start(void) {
 	rewatch();
 	if (errbuf[0])
 		setstatus(errbuf);
+	if (L) {
+		/* run ewm.autostart commands through ewm.spawn */
+		lua_getfield(L, LUA_REGISTRYINDEX, AUTOSTART);
+		n = luaL_len(L, -1);
+		for (i = 1; i <= n; i++) {
+			lua_getfield(L, LUA_REGISTRYINDEX, LUA_LOADED_TABLE);
+			lua_getfield(L, -1, "ewm");
+			lua_getfield(L, -1, "spawn");
+			lua_rawgeti(L, -4, i);
+			pcall(L, 1, 0, "autostart");
+			lua_pop(L, 2);
+		}
+		lua_pop(L, 1);
+	}
 	config_hook("startup", NULL);
 }
 
@@ -1238,7 +1312,7 @@ void config_reload(void) {
 	int res;
 
 	errbuf[0] = '\0';
-	if ((res = load(&newcfg, &nl)) != 0) {
+	if ((res = load(&newcfg, &nl, 0)) != 0) {
 		if (res > 0)
 			report("no config.lua found");
 		return;

@@ -127,7 +127,6 @@ static void propertynotify(XEvent *e);
 static Monitor *recttomon(int x, int y, int w, int h);
 static void resizeclient(Client *c, int x, int y, int w, int h);
 static void run(void);
-static void runautostart(void);
 static void scan(void);
 static int sendevent(Client *c, Atom proto);
 static void sendmon(Client *c, Monitor *m);
@@ -1634,22 +1633,6 @@ static void childsetup(void) {
 	sigaction(SIGCHLD, &sa, NULL);
 }
 
-/* start $XDG_CONFIG_HOME/ewm/autostart.sh (~/.config/ewm) in the background */
-void runautostart(void) {
-	char path[PATH_MAX];
-
-	if (configpath(path, sizeof(path), "autostart.sh") < 0
-	    || access(path, X_OK) != 0)
-		return;
-	if (fork() == 0) {
-		childsetup();
-		execl(path, path, (char *) NULL);
-		fprintf(stderr, "ewm: execl %s", path);
-		perror(" failed");
-		exit(EXIT_FAILURE);
-	}
-}
-
 void scan(void) {
 	unsigned int i, num;
 	Window d1, d2, *wins = NULL;
@@ -2556,7 +2539,6 @@ int main(int argc, char *argv[]) {
 	config_init();
 	setup();
 	scan();
-	runautostart();
 	config_start();
 	run();
 	cleanup();
