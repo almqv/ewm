@@ -17,7 +17,6 @@ ewm.set {
 	},
 	tags = { "1", "2", "3", "4", "5", "6", "7", "8", "9" },
 	layouts = { "tile", "floating", "monocle" }, -- first is the default
-	statusbar = "dwmblocks", -- receives status bar clicks as signals
 }
 
 -- xprop(1): WM_CLASS(STRING) = instance, class; WM_NAME(STRING) = title
@@ -45,10 +44,8 @@ local function pick(names)
 	return names[#names]
 end
 
--- programs started once per session (not again on reload)
-if have("dwmblocks") then
-	ewm.autostart("pkill -x dwmblocks; exec dwmblocks")
-end
+-- programs started once per session (not again on reload); a status bar,
+-- clock etc. go in plugins, see PREFIX/share/ewm/examples
 if have("picom") then
 	ewm.autostart("pkill -x picom; while pgrep -u \"$(id -u)\" -x picom >/dev/null; do sleep 1; done; exec picom")
 end
@@ -65,10 +62,10 @@ local function dmenu()
 	ewm.spawn { "dmenu_run", "-m", tostring(ewm.monitor().num), "-p", "Run $", "-z", "512" }
 end
 
--- media keys (dwmblocks refreshes its volume block on RTMIN+1)
-key(mod, "XF86AudioLowerVolume", ewm.spawn, "amixer -q set Master 5%- unmute; pkill -RTMIN+1 dwmblocks")
-key(mod, "XF86AudioRaiseVolume", ewm.spawn, "amixer -q set Master 5%+ unmute; pkill -RTMIN+1 dwmblocks")
-key(mod, "XF86AudioMute", ewm.spawn, "amixer -q set Master toggle; pkill -RTMIN+1 dwmblocks")
+-- media keys
+key(mod, "XF86AudioLowerVolume", ewm.spawn, "amixer -q set Master 5%- unmute")
+key(mod, "XF86AudioRaiseVolume", ewm.spawn, "amixer -q set Master 5%+ unmute")
+key(mod, "XF86AudioMute", ewm.spawn, "amixer -q set Master toggle")
 key(mod .. "+Shift", "XF86AudioMute", ewm.spawn, "amixer set Capture toggle")
 key(mod, "u", ewm.spawn, "playerctl play-pause")
 
@@ -137,9 +134,6 @@ key(mod .. "+Shift", "e", ewm.quit)
 
 -- mouse; tag bar buttons without arguments receive the clicked tag
 local button = ewm.button
-for b = 1, 5 do
-	button("status", "", b, ewm.sigstatusbar, b)
-end
 button("layout", "", 1, ewm.setlayout)
 button("layout", "", 3, ewm.setlayout, "monocle")
 button("title", "", 2, ewm.zoom)
