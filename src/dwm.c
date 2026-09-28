@@ -21,6 +21,7 @@
  * To understand everything else, start reading main().
  */
 #include <X11/Xatom.h>
+#include <X11/XKBlib.h>
 #include <X11/Xlib.h>
 #include <X11/Xproto.h>
 #include <X11/Xutil.h>
@@ -55,7 +56,7 @@
 #define INTERSECT(x, y, w, h, m)                                             \
 	(MAX(0, MIN((x) + (w), (m)->mx + (m)->mw) - MAX((x), (m)->mx))           \
 	 * MAX(0, MIN((y) + (h), (m)->my + (m)->mh) - MAX((y), (m)->my)))
-#define ISVISIBLEONTAG(C, T) ((C->tags & T))
+#define ISVISIBLEONTAG(C, T) (((C)->tags & (T)))
 #define ISVISIBLE(C)         ISVISIBLEONTAG(C, C->mon->tagset[C->mon->seltags])
 #define LENGTH(X)            (sizeof X / sizeof X[0])
 #define MOUSEMASK            (BUTTONMASK | PointerMotionMask)
@@ -222,11 +223,11 @@ static void focusstack(const Arg *arg);
 static Atom getatomprop(Client *c, Atom prop);
 static int getrootptr(int *x, int *y);
 static long getstate(Window w);
-static pid_t getstatusbarpid();
+static pid_t getstatusbarpid(void);
 static int gettextprop(Window w, Atom atom, char *text, unsigned int size);
 static void grabbuttons(Client *c, int focused);
 static void grabkeys(void);
-static int handlexevent(struct epoll_event *ev);
+static void handlexevents(void);
 static void incnmaster(const Arg *arg);
 static void keypress(XEvent *e);
 static void killclient(const Arg *arg);
@@ -264,7 +265,6 @@ static void setup(void);
 static void setupepoll(void);
 static void seturgent(Client *c, int urg);
 static void showhide(Client *c);
-static void sigchld(int unused);
 static void sigstatusbar(const Arg *arg);
 static void spawn(const Arg *arg);
 static void tag(const Arg *arg);
@@ -469,7 +469,7 @@ void arrange(Monitor *m) {
 }
 
 void arrangemon(Monitor *m) {
-	strncpy(m->ltsymbol, m->lt[m->sellt]->symbol, sizeof m->ltsymbol);
+	snprintf(m->ltsymbol, sizeof m->ltsymbol, "%s", m->lt[m->sellt]->symbol);
 	if (m->lt[m->sellt]->arrange)
 		m->lt[m->sellt]->arrange(m);
 }
@@ -481,7 +481,7 @@ void attach(Client *c) {
 
 void attachtop(Client *c) {
 	int n;
-	Monitor *m = selmon;
+	Monitor *m = c->mon;
 	Client *below;
 
 	for (n = 1, below = c->mon->clients;
@@ -590,6 +590,7 @@ void cleanup(void) {
 		drw_cur_free(drw, cursor[i]);
 	for (i = 0; i < LENGTH(colors); i++)
 		free(scheme[i]);
+	free(scheme);
 	XDestroyWindow(dpy, wmcheckwin);
 	drw_free(drw);
 	XSync(dpy, False);
@@ -615,6 +616,8 @@ void cleanupmon(Monitor *mon) {
 	}
 	XUnmapWindow(dpy, mon->barwin);
 	XDestroyWindow(dpy, mon->barwin);
+	if (lastselmon == mon)
+		lastselmon = NULL;
 	free(mon);
 }
 
@@ -736,6 +739,7 @@ void configurerequest(XEvent *e) {
 
 Monitor *createmon(void) {
 	Monitor *m;
+	size_t i;
 
 	m            = ecalloc(1, sizeof(Monitor));
 	m->tagset[0] = m->tagset[1] = 1;
@@ -744,10 +748,14 @@ Monitor *createmon(void) {
 	m->showbar                  = showbar;
 	m->topbar                   = topbar;
 	m->gappx                    = gappx;
-	m->gapidx                   = 0;
+	for (i = 0; i < LENGTH(gapmodes); i++)
+		if (gapmodes[i] == gappx) {
+			m->gapidx = i;
+			break;
+		}
 	m->lt[0]                    = &layouts[0];
 	m->lt[1]                    = &layouts[1 % LENGTH(layouts)];
-	strncpy(m->ltsymbol, layouts[0].symbol, sizeof m->ltsymbol);
+	snprintf(m->ltsymbol, sizeof m->ltsymbol, "%s", layouts[0].symbol);
 	return m;
 }
 
@@ -968,41 +976,49 @@ void focusstack(const Arg *arg) {
 }
 
 Atom getatomprop(Client *c, Atom prop) {
-	int di;
-	unsigned long dl;
+	int format;
+	unsigned long nitems, after;
 	unsigned char *p = NULL;
-	Atom da, atom = None;
+	Atom type, atom = None;
 
 	if (XGetWindowProperty(dpy, c->win, prop, 0L, sizeof atom, False, XA_ATOM,
-	                       &da, &di, &dl, &dl, &p)
+	                       &type, &format, &nitems, &after, &p)
 	        == Success
 	    && p) {
-		atom = *(Atom *) p;
+		if (nitems > 0 && format == 32)
+			atom = *(long *) p;
 		XFree(p);
 	}
 	return atom;
 }
 
-pid_t getstatusbarpid() {
-	char buf[32], *str = buf, *c;
+pid_t getstatusbarpid(void) {
+	char buf[64], cmd[128], *str = buf, *c, *end;
 	FILE *fp;
+	long pid;
 
 	if (statuspid > 0) {
-		snprintf(buf, sizeof(buf), "/proc/%u/cmdline", statuspid);
+		snprintf(buf, sizeof(buf), "/proc/%ld/cmdline", (long) statuspid);
 		if ((fp = fopen(buf, "r"))) {
-			fgets(buf, sizeof(buf), fp);
-			while ((c = strchr(str, '/')))
-				str = c + 1;
+			if (fgets(buf, sizeof(buf), fp)) {
+				while ((c = strchr(str, '/')))
+					str = c + 1;
+				if (!strcmp(str, STATUSBAR)) {
+					fclose(fp);
+					return statuspid;
+				}
+			}
 			fclose(fp);
-			if (!strcmp(str, STATUSBAR))
-				return statuspid;
 		}
 	}
-	if (!(fp = popen("pidof -s " STATUSBAR, "r")))
+	snprintf(cmd, sizeof(cmd), "pidof -s %s", STATUSBAR);
+	if (!(fp = popen(cmd, "r")))
 		return -1;
-	fgets(buf, sizeof(buf), fp);
+	if (!fgets(buf, sizeof(buf), fp))
+		buf[0] = '\0';
 	pclose(fp);
-	return strtol(buf, NULL, 10);
+	pid = strtol(buf, &end, 10);
+	return end != buf && pid > 0 ? (pid_t) pid : -1;
 }
 
 int getrootptr(int *x, int *y) {
@@ -1025,8 +1041,8 @@ long getstate(Window w) {
 	                       (unsigned char **) &p)
 	    != Success)
 		return -1;
-	if (n != 0)
-		result = *p;
+	if (n != 0 && format == 32)
+		result = *(long *) p;
 	XFree(p);
 	return result;
 }
@@ -1081,32 +1097,38 @@ void grabkeys(void) {
 		unsigned int i, j;
 		unsigned int modifiers[] = {0, LockMask, numlockmask,
 		                            numlockmask | LockMask};
-		KeyCode code;
+		int k, start, end, skip;
+		KeySym *syms;
 
 		XUngrabKey(dpy, AnyKey, AnyModifier, root);
-		for (i = 0; i < LENGTH(keys); i++)
-			if ((code = XKeysymToKeycode(dpy, keys[i].keysym)))
-				for (j = 0; j < LENGTH(modifiers); j++)
-					XGrabKey(dpy, code, keys[i].mod | modifiers[j], root,
-					         True, GrabModeAsync, GrabModeAsync);
+		XDisplayKeycodes(dpy, &start, &end);
+		syms = XGetKeyboardMapping(dpy, start, end - start + 1, &skip);
+		if (!syms)
+			return;
+		/* grab every keycode producing the keysym, not just the first one */
+		for (k = start; k <= end; k++)
+			for (i = 0; i < LENGTH(keys); i++)
+				if (keys[i].keysym == syms[(k - start) * skip])
+					for (j = 0; j < LENGTH(modifiers); j++)
+						XGrabKey(dpy, k, keys[i].mod | modifiers[j], root,
+						         True, GrabModeAsync, GrabModeAsync);
+		XFree(syms);
 	}
 }
 
-int handlexevent(struct epoll_event *ev) {
-	if (ev->events & EPOLLIN) {
-		XEvent ev;
-		while (running && XPending(dpy)) {
-			XNextEvent(dpy, &ev);
-			if (handler[ev.type]) {
-				handler[ev.type](&ev); /* call handler */
-				ipc_send_events(mons, &lastselmon, selmon);
-			}
-		}
-	} else if (ev->events & EPOLLHUP) {
-		return -1;
-	}
+/* handle every X event, both those still on the socket and those Xlib
+ * already moved into its queue (e.g. during an XSync in an IPC command);
+ * XPending also flushes the output buffer before epoll_wait blocks */
+void handlexevents(void) {
+	XEvent ev;
 
-	return 0;
+	while (running && XPending(dpy)) {
+		XNextEvent(dpy, &ev);
+		if (handler[ev.type]) {
+			handler[ev.type](&ev); /* call handler */
+			ipc_send_events();
+		}
+	}
 }
 
 void incnmaster(const Arg *arg) {
@@ -1132,7 +1154,7 @@ void keypress(XEvent *e) {
 	XKeyEvent *ev;
 
 	ev     = &e->xkey;
-	keysym = XKeycodeToKeysym(dpy, (KeyCode) ev->keycode, 0);
+	keysym = XkbKeycodeToKeysym(dpy, (KeyCode) ev->keycode, 0, 0);
 	for (i = 0; i < LENGTH(keys); i++)
 		if (keysym == keys[i].keysym
 		    && CLEANMASK(keys[i].mod) == CLEANMASK(ev->state) && keys[i].func)
@@ -1176,25 +1198,21 @@ void manage(Window w, XWindowAttributes *wa) {
 		applyrules(c);
 	}
 
-	if (c->x + WIDTH(c) > c->mon->mx + c->mon->mw)
-		c->x = c->mon->mx + c->mon->mw - WIDTH(c);
-	if (c->y + HEIGHT(c) > c->mon->my + c->mon->mh)
-		c->y = c->mon->my + c->mon->mh - HEIGHT(c);
-	c->x = MAX(c->x, c->mon->mx);
-	/* only fix client y-offset, if the client center might cover the bar */
-	c->y  = MAX(c->y, ((c->mon->by == c->mon->my)
-                      && (c->x + (c->w / 2) >= c->mon->wx)
-                      && (c->x + (c->w / 2) < c->mon->wx + c->mon->ww))
-	                      ? bh
-	                      : c->mon->my);
 	c->bw = borderpx;
+	if (c->x + WIDTH(c) > c->mon->wx + c->mon->ww)
+		c->x = c->mon->wx + c->mon->ww - WIDTH(c);
+	if (c->y + HEIGHT(c) > c->mon->wy + c->mon->wh)
+		c->y = c->mon->wy + c->mon->wh - HEIGHT(c);
+	c->x = MAX(c->x, c->mon->wx);
+	c->y = MAX(c->y, c->mon->wy);
+	/* windows without a position preference end up at the origin of the
+	 * window area; center them instead */
+	if (c->x == c->mon->wx)
+		c->x = MAX(c->mon->wx, c->mon->wx + (c->mon->ww - WIDTH(c)) / 2);
+	if (c->y == c->mon->wy)
+		c->y = MAX(c->mon->wy, c->mon->wy + (c->mon->wh - HEIGHT(c)) / 2);
 
 	wc.border_width = c->bw;
-
-	if (c->x == selmon->wx)
-		c->x += (c->mon->ww - WIDTH(c)) / 2 - c->bw;
-	if (c->y == selmon->wy)
-		c->y += (c->mon->wh - HEIGHT(c)) / 2 - c->bw;
 
 	XConfigureWindow(dpy, w, CWBorderWidth, &wc);
 	XSetWindowBorder(dpy, w, scheme[SchemeNorm][ColBorder].pixel);
@@ -1334,19 +1352,39 @@ void movemouse(const Arg *arg) {
 	}
 }
 
-void moveresize(const Arg *arg) {
-	/* only floating windows can be moved */
-	Client *c;
-	c = selmon->sel;
-	int x, y, w, h, nx, ny, nw, nh, ox, oy, ow, oh;
-	char xAbs, yAbs, wAbs, hAbs;
-	int msx, msy, dx, dy, nmx, nmy;
+/* the selected client if it may be moved/resized from the keyboard */
+static Client *movableclient(void) {
+	Client *c = selmon->sel;
+
+	if (!c || c->isfullscreen
+	    || (selmon->lt[selmon->sellt]->arrange && !c->isfloating))
+		return NULL;
+	return c;
+}
+
+/* raise and resize c, dragging the pointer along if it was inside c so that
+ * sloppy focus does not move to another window */
+static void moveresizeclient(Client *c, int nx, int ny, int nw, int nh) {
+	int ox = c->x, oy = c->y, ow = c->w, oh = c->h;
+	int msx, msy, di;
 	unsigned int dui;
 	Window dummy;
+	Bool xqp;
 
-	if (!c || !arg)
-		return;
-	if (selmon->lt[selmon->sellt]->arrange && !c->isfloating)
+	XRaiseWindow(dpy, c->win);
+	xqp = XQueryPointer(dpy, root, &dummy, &dummy, &msx, &msy, &di, &di, &dui);
+	resize(c, nx, ny, nw, nh, True);
+	if (xqp && ox <= msx && ox + ow >= msx && oy <= msy && oy + oh >= msy)
+		XWarpPointer(dpy, None, None, 0, 0, 0, 0, c->x - ox + c->w - ow,
+		             c->y - oy + c->h - oh);
+}
+
+void moveresize(const Arg *arg) {
+	Client *c;
+	int x, y, w, h, nx, ny, nw, nh;
+	char xAbs, yAbs, wAbs, hAbs;
+
+	if (!arg || !arg->v || !(c = movableclient()))
 		return;
 	if (sscanf((char *) arg->v, "%d%c %d%c %d%c %d%c", &x, &xAbs, &y, &yAbs,
 	           &w, &wAbs, &h, &hAbs)
@@ -1383,118 +1421,74 @@ void moveresize(const Arg *arg) {
 			ny = y;
 	}
 
-	ox = c->x;
-	oy = c->y;
-	ow = c->w;
-	oh = c->h;
-
-	XRaiseWindow(dpy, c->win);
-	Bool xqp =
-	    XQueryPointer(dpy, root, &dummy, &dummy, &msx, &msy, &dx, &dy, &dui);
-	resize(c, nx, ny, nw, nh, True);
-
-	/* move cursor along with the window to avoid problems caused by the
-	 * sloppy focus */
-	if (xqp && ox <= msx && (ox + ow) >= msx && oy <= msy
-	    && (oy + oh) >= msy) {
-		nmx = c->x - ox + c->w - ow;
-		nmy = c->y - oy + c->h - oh;
-		XWarpPointer(dpy, None, None, 0, 0, 0, 0, nmx, nmy);
-	}
+	moveresizeclient(c, nx, ny, nw, nh);
 }
 
+/* move (t, b, l, r) or grow (T, B, L, R) a floating window to an edge of the
+ * window area; growing an already grown window restores its previous size */
 void moveresizeedge(const Arg *arg) {
-	/* move or resize floating window to edge of screen */
 	Client *c;
-	c = selmon->sel;
 	char e;
-	int nx, ny, nw, nh, ox, oy, ow, oh, bp;
-	int msx, msy, dx, dy, nmx, nmy;
-	int starty;
-	unsigned int dui;
-	Window dummy;
+	int nx, ny, nw, nh;
+	int wx = selmon->wx, wy = selmon->wy;
+	int wr = selmon->wx + selmon->ww, wb = selmon->wy + selmon->wh;
+
+	if (!arg || !arg->v || !(c = movableclient()))
+		return;
+	if (sscanf((char *) arg->v, "%c", &e) != 1)
+		return;
 
 	nx = c->x;
 	ny = c->y;
 	nw = c->w;
 	nh = c->h;
-
-	starty = selmon->showbar && topbar ? bh : 0;
-	bp     = selmon->showbar && !topbar ? bh : 0;
-
-	if (!c || !arg)
-		return;
-	if (selmon->lt[selmon->sellt]->arrange && !c->isfloating)
-		return;
-	if (sscanf((char *) arg->v, "%c", &e) != 1)
-		return;
-
-	if (e == 't')
-		ny = starty;
-
-	if (e == 'b')
-		ny = c->h > selmon->mh - 2 * c->bw
-		       ? c->h - bp
-		       : selmon->mh - c->h - 2 * c->bw - bp;
-
-	if (e == 'l')
-		nx = selmon->mx;
-
-	if (e == 'r')
-		nx = c->w > selmon->mw - 2 * c->bw
-		       ? selmon->mx + c->w
-		       : selmon->mx + selmon->mw - c->w - 2 * c->bw;
-
-	if (e == 'T') {
-		/* if you click to resize again, it will return to old size/position
-		 */
-		if (c->h + starty == c->oldh + c->oldy) {
-			nh = c->oldh;
+	switch (e) {
+	case 't':
+		ny = wy;
+		break;
+	case 'b':
+		ny = wb - HEIGHT(c);
+		break;
+	case 'l':
+		nx = wx;
+		break;
+	case 'r':
+		nx = wr - WIDTH(c);
+		break;
+	case 'T':
+		if (c->y == wy && c->oldy + c->oldh == c->y + c->h) {
 			ny = c->oldy;
+			nh = c->oldh;
 		} else {
-			nh = c->h + c->y - starty;
-			ny = starty;
+			ny = wy;
+			nh = c->y + c->h - wy;
 		}
-	}
-
-	if (e == 'B')
-		nh = c->h + c->y + 2 * c->bw + bp == selmon->mh
-		       ? c->oldh
-		       : selmon->mh - c->y - 2 * c->bw - bp;
-
-	if (e == 'L') {
-		if (selmon->mx + c->w == c->oldw + c->oldx) {
-			nw = c->oldw;
+		break;
+	case 'B':
+		if (c->y + HEIGHT(c) == wb && c->oldy == c->y)
+			nh = c->oldh;
+		else
+			nh = wb - c->y - 2 * c->bw;
+		break;
+	case 'L':
+		if (c->x == wx && c->oldx + c->oldw == c->x + c->w) {
 			nx = c->oldx;
+			nw = c->oldw;
 		} else {
-			nw = c->w + c->x - selmon->mx;
-			nx = selmon->mx;
+			nx = wx;
+			nw = c->x + c->w - wx;
 		}
+		break;
+	case 'R':
+		if (c->x + WIDTH(c) == wr && c->oldx == c->x)
+			nw = c->oldw;
+		else
+			nw = wr - c->x - 2 * c->bw;
+		break;
+	default:
+		return;
 	}
-
-	if (e == 'R')
-		nw = c->w + c->x + 2 * c->bw == selmon->mx + selmon->mw
-		       ? c->oldw
-		       : selmon->mx + selmon->mw - c->x - 2 * c->bw;
-
-	ox = c->x;
-	oy = c->y;
-	ow = c->w;
-	oh = c->h;
-
-	XRaiseWindow(dpy, c->win);
-	Bool xqp =
-	    XQueryPointer(dpy, root, &dummy, &dummy, &msx, &msy, &dx, &dy, &dui);
-	resize(c, nx, ny, nw, nh, True);
-
-	/* move cursor along with the window to avoid problems caused by the
-	 * sloppy focus */
-	if (xqp && ox <= msx && (ox + ow) >= msx && oy <= msy
-	    && (oy + oh) >= msy) {
-		nmx = c->x - ox + c->w - ow;
-		nmy = c->y - oy + c->h - oh;
-		XWarpPointer(dpy, None, None, 0, 0, 0, 0, nmx, nmy);
-	}
+	moveresizeclient(c, nx, ny, nw, nh);
 }
 
 Client *nexttiled(Client *c) {
@@ -1672,42 +1666,39 @@ void restack(Monitor *m) {
 }
 
 void run(void) {
-	int event_count      = 0;
-	const int MAX_EVENTS = 10;
+	enum { MAX_EVENTS = 10 };
 	struct epoll_event events[MAX_EVENTS];
+	int i, n, fd;
 
 	XSync(dpy, False);
 
 	/* main event loop */
 	while (running) {
-		event_count = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
+		handlexevents();
+		if (!running)
+			break;
+		if ((n = epoll_wait(epoll_fd, events, MAX_EVENTS, -1)) < 0) {
+			if (errno == EINTR)
+				continue;
+			die("epoll_wait:");
+		}
+		for (i = 0; i < n; i++) {
+			fd = events[i].data.fd;
+			DEBUG("Got event from fd %d\n", fd);
 
-		for (int i = 0; i < event_count; i++) {
-			int event_fd = events[i].data.fd;
-			DEBUG("Got event from fd %d\n", event_fd);
-
-			if (event_fd == dpy_fd) {
-				// -1 means EPOLLHUP
-				if (handlexevent(events + i) == -1)
-					return;
-			} else if (event_fd == ipc_get_sock_fd()) {
+			if (fd == dpy_fd) {
+				if (!(events[i].events & EPOLLIN)
+				    && events[i].events & (EPOLLHUP | EPOLLERR))
+					return; /* X server went away */
+				/* events are read by handlexevents() at the loop top */
+			} else if (fd == ipc_get_sock_fd()) {
 				ipc_handle_socket_epoll_event(events + i);
-			} else if (ipc_is_client_registered(event_fd)) {
-				if (ipc_handle_client_epoll_event(
-				        events + i, mons, &lastselmon, selmon, tags,
-				        LENGTH(tags), layouts, LENGTH(layouts))
-				    < 0) {
-					fprintf(stderr, "Error handling IPC event on fd %d\n",
-					        event_fd);
-				}
+			} else if (ipc_is_client_registered(fd)) {
+				if (ipc_handle_client_epoll_event(events + i) < 0)
+					fprintf(stderr, "ewm: error handling IPC event on fd %d\n",
+					        fd);
 			} else {
-				fprintf(
-				    stderr,
-				    "Got event from unknown fd %d, ptr %p, u32 %d, u64 %lu",
-				    event_fd, events[i].data.ptr, events[i].data.u32,
-				    events[i].data.u64);
-				fprintf(stderr, " with events %d\n", events[i].events);
-				return;
+				fprintf(stderr, "ewm: event from unknown fd %d\n", fd);
 			}
 		}
 	}
@@ -1905,7 +1896,9 @@ void setgaps(const Arg *arg) {
 }
 
 void switchgaps(const Arg *arg) {
-	selmon->gapidx = (selmon->gapidx + arg->i) % LENGTH(gapmodes);
+	int n = LENGTH(gapmodes);
+
+	selmon->gapidx = ((selmon->gapidx + (int) arg->i) % n + n) % n;
 	selmon->gappx  = gapmodes[selmon->gapidx];
 
 	arrange(selmon);
@@ -1916,8 +1909,8 @@ void setlayout(const Arg *arg) {
 		selmon->sellt ^= 1;
 	if (arg && arg->v)
 		selmon->lt[selmon->sellt] = (Layout *) arg->v;
-	strncpy(selmon->ltsymbol, selmon->lt[selmon->sellt]->symbol,
-	        sizeof selmon->ltsymbol);
+	snprintf(selmon->ltsymbol, sizeof selmon->ltsymbol, "%s",
+	         selmon->lt[selmon->sellt]->symbol);
 	if (selmon->sel)
 		arrange(selmon);
 	else
@@ -1926,12 +1919,17 @@ void setlayout(const Arg *arg) {
 
 void setlayoutsafe(const Arg *arg) {
 	const Layout *ltptr = (Layout *) arg->v;
-	if (ltptr == 0)
+	size_t i;
+
+	if (!ltptr) {
 		setlayout(arg);
-	for (int i = 0; i < LENGTH(layouts); i++) {
-		if (ltptr == &layouts[i])
-			setlayout(arg);
+		return;
 	}
+	for (i = 0; i < LENGTH(layouts); i++)
+		if (ltptr == &layouts[i]) {
+			setlayout(arg);
+			return;
+		}
 }
 
 /* arg > 1.0 will set mfact absolutely */
@@ -1951,9 +1949,17 @@ void setup(void) {
 	int i;
 	XSetWindowAttributes wa;
 	Atom utf8string;
+	struct sigaction sa;
 
-	/* clean up any zombies immediately */
-	sigchld(0);
+	/* do not transform children into zombies when they terminate */
+	sigemptyset(&sa.sa_mask);
+	sa.sa_flags   = SA_NOCLDSTOP | SA_NOCLDWAIT | SA_RESTART;
+	sa.sa_handler = SIG_IGN;
+	sigaction(SIGCHLD, &sa, NULL);
+
+	/* clean up any zombies (inherited from .xinitrc etc) immediately */
+	while (waitpid(-1, NULL, WNOHANG) > 0)
+		;
 
 	/* init screen */
 	screen = DefaultScreen(dpy);
@@ -2020,31 +2026,19 @@ void setup(void) {
 }
 
 void setupepoll(void) {
-	epoll_fd = epoll_create1(0);
-	dpy_fd   = ConnectionNumber(dpy);
-	struct epoll_event dpy_event;
+	struct epoll_event dpy_event = {.events = EPOLLIN};
 
-	// Initialize struct to 0
-	memset(&dpy_event, 0, sizeof(dpy_event));
-
-	DEBUG("Display socket is fd %d\n", dpy_fd);
-
-	if (epoll_fd == -1) {
-		fputs("Failed to create epoll file descriptor", stderr);
-	}
-
-	dpy_event.events  = EPOLLIN;
+	if ((epoll_fd = epoll_create1(EPOLL_CLOEXEC)) == -1)
+		die("epoll_create1:");
+	dpy_fd            = ConnectionNumber(dpy);
 	dpy_event.data.fd = dpy_fd;
-	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, dpy_fd, &dpy_event)) {
-		fputs("Failed to add display file descriptor to epoll", stderr);
-		close(epoll_fd);
-		exit(1);
-	}
+	DEBUG("Display socket is fd %d\n", dpy_fd);
+	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, dpy_fd, &dpy_event))
+		die("epoll_ctl: cannot add display fd:");
 
 	if (ipc_init(ipcsockpath, epoll_fd, ipccommands, LENGTH(ipccommands))
-	    < 0) {
-		fputs("Failed to initialize IPC\n", stderr);
-	}
+	    < 0)
+		fputs("ewm: failed to initialize IPC\n", stderr);
 }
 
 void seturgent(Client *c, int urg) {
@@ -2076,17 +2070,10 @@ void showhide(Client *c) {
 	}
 }
 
-void sigchld(int unused) {
-	if (signal(SIGCHLD, sigchld) == SIG_ERR)
-		die("can't install SIGCHLD handler:");
-	while (0 < waitpid(-1, NULL, WNOHANG))
-		;
-}
-
 void sigstatusbar(const Arg *arg) {
 	union sigval sv;
 
-	if (!statussig)
+	if (!statussig || SIGRTMIN + statussig > SIGRTMAX)
 		return;
 	sv.sival_int = arg->i;
 	if ((statuspid = getstatusbarpid()) <= 0)
@@ -2099,11 +2086,19 @@ void spawn(const Arg *arg) {
 	if (arg->v == dmenucmd)
 		dmenumon[0] = '0' + selmon->num;
 	if (fork() == 0) {
+		struct sigaction sa;
+
 		if (dpy)
 			close(ConnectionNumber(dpy));
 		setsid();
+
+		sigemptyset(&sa.sa_mask);
+		sa.sa_flags   = 0;
+		sa.sa_handler = SIG_DFL;
+		sigaction(SIGCHLD, &sa, NULL);
+
 		execvp(((char **) arg->v)[0], (char **) arg->v);
-		fprintf(stderr, "dwm: execvp %s", ((char **) arg->v)[0]);
+		fprintf(stderr, "ewm: execvp %s", ((char **) arg->v)[0]);
 		perror(" failed");
 		exit(EXIT_SUCCESS);
 	}
@@ -2233,6 +2228,10 @@ void unmanage(Client *c, int destroyed) {
 		XSetErrorHandler(xerror);
 		XUngrabServer(dpy);
 	}
+	for (m = mons; m; m = m->next)
+		if (m->lastsel == c)
+			m->lastsel = NULL;
+	m = c->mon;
 	free(c);
 	focus(NULL);
 	updateclientlist();

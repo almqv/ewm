@@ -1,6 +1,80 @@
 #include "yajl_dumps.h"
 
+#include <math.h>
 #include <stdint.h>
+
+/**
+ * Length of the valid UTF-8 sequence starting at s (at most n bytes
+ * available), or 0 if the sequence is invalid (overlong, surrogate, out of
+ * range, or truncated).
+ */
+static size_t utf8_seqlen(const unsigned char *s, size_t n) {
+	const unsigned char c = s[0];
+
+#define CONT(i) (n > (i) && (s[i] & 0xC0) == 0x80)
+	if (c < 0x80)
+		return 1;
+	if (c >= 0xC2 && c <= 0xDF)
+		return CONT(1) ? 2 : 0;
+	if (c >= 0xE0 && c <= 0xEF) {
+		if (!CONT(1) || !CONT(2))
+			return 0;
+		if ((c == 0xE0 && s[1] < 0xA0) || (c == 0xED && s[1] > 0x9F))
+			return 0;
+		return 3;
+	}
+	if (c >= 0xF0 && c <= 0xF4) {
+		if (!CONT(1) || !CONT(2) || !CONT(3))
+			return 0;
+		if ((c == 0xF0 && s[1] < 0x90) || (c == 0xF4 && s[1] > 0x8F))
+			return 0;
+		return 4;
+	}
+#undef CONT
+	return 0;
+}
+
+yajl_gen_status dump_string(yajl_gen gen, const char *str) {
+	static const unsigned char replacement[] = {0xEF, 0xBF, 0xBD}; // U+FFFD
+	const unsigned char *s                   = (const unsigned char *) str;
+	const size_t len                         = strlen(str);
+	unsigned char *buf;
+	size_t i = 0, j, n;
+	yajl_gen_status status;
+
+	// Fast path: string is already valid UTF-8
+	while (i < len && (n = utf8_seqlen(s + i, len - i)))
+		i += n;
+	if (i == len)
+		return yajl_gen_string(gen, s, len);
+
+	// Each invalid byte expands to at most 3 bytes
+	buf = ecalloc(len * 3 + 1, 1);
+	memcpy(buf, s, i);
+	j = i;
+	while (i < len) {
+		if ((n = utf8_seqlen(s + i, len - i))) {
+			memcpy(buf + j, s + i, n);
+			i += n;
+			j += n;
+		} else {
+			memcpy(buf + j, replacement, sizeof(replacement));
+			i++;
+			j += sizeof(replacement);
+		}
+	}
+
+	status = yajl_gen_string(gen, buf, j);
+	free(buf);
+
+	return status;
+}
+
+yajl_gen_status dump_double(yajl_gen gen, double num) {
+	if (!isfinite(num))
+		return yajl_gen_null(gen);
+	return yajl_gen_double(gen, num);
+}
 
 int dump_tag(yajl_gen gen, const char *name, const int tag_mask) {
 	// clang-format off

@@ -4,9 +4,9 @@
 #include <string.h>
 #include <yajl/yajl_gen.h>
 
-#define YSTR(str)    yajl_gen_string(gen, (unsigned char *) str, strlen(str))
+#define YSTR(str)    dump_string(gen, str)
 #define YINT(num)    yajl_gen_integer(gen, num)
-#define YDOUBLE(num) yajl_gen_double(gen, num)
+#define YDOUBLE(num) dump_double(gen, num)
 #define YBOOL(v)     yajl_gen_bool(gen, v)
 #define YNULL()      yajl_gen_null(gen)
 #define YARR(body)                                                           \
@@ -21,6 +21,18 @@
 		body;                                                                \
 		yajl_gen_map_close(gen);                                             \
 	}
+
+/**
+ * Emit a JSON string. Invalid UTF-8 sequences are replaced by U+FFFD so the
+ * generated document is always valid JSON.
+ */
+yajl_gen_status dump_string(yajl_gen gen, const char *str);
+
+/**
+ * Emit a JSON number, or null if the value is not finite (JSON has no
+ * representation for inf/NaN).
+ */
+yajl_gen_status dump_double(yajl_gen gen, double num);
 
 int dump_tag(yajl_gen gen, const char *name, const int tag_mask);
 

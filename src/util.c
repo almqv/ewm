@@ -34,34 +34,23 @@ void die(const char *fmt, ...) {
 }
 
 int normalizepath(const char *path, char **normal) {
-	size_t len       = strlen(path);
-	*normal          = (char *) malloc((len + 1) * sizeof(char));
-	const char *walk = path;
-	const char *match;
-	size_t newlen = 0;
+	const size_t len = strlen(path);
+	char *out        = ecalloc(len + 1, sizeof(char));
+	size_t n         = 0;
 
-	while ((match = strchr(walk, '/'))) {
-		// Copy everything between match and walk
-		strncpy(*normal + newlen, walk, match - walk);
-		newlen += match - walk;
-		walk += match - walk;
-
-		// Skip all repeating slashes
-		while (*walk == '/')
-			walk++;
-
-		// If not last character in path
-		if (walk != path + len)
-			(*normal)[newlen++] = '/';
+	for (const char *p = path; *p; p++) {
+		// Collapse repeated slashes
+		if (*p == '/' && n > 0 && out[n - 1] == '/')
+			continue;
+		out[n++] = *p;
 	}
 
-	(*normal)[newlen++] = '\0';
+	// Strip a trailing slash, but keep the root directory "/"
+	if (n > 1 && out[n - 1] == '/')
+		n--;
+	out[n] = '\0';
 
-	// Copy remaining path
-	strcat(*normal, walk);
-	newlen += strlen(walk);
-
-	*normal = (char *) realloc(*normal, newlen * sizeof(char));
+	*normal = out;
 
 	return 0;
 }
@@ -69,7 +58,9 @@ int normalizepath(const char *path, char **normal) {
 int parentdir(const char *path, char **parent) {
 	char *normal;
 	char *walk;
+	size_t len;
 
+	*parent = NULL;
 	normalizepath(path, &normal);
 
 	// Pointer to last '/'
@@ -78,14 +69,10 @@ int parentdir(const char *path, char **parent) {
 		return -1;
 	}
 
-	// Get path up to last '/'
-	size_t len = walk - normal;
-	*parent    = (char *) malloc((len + 1) * sizeof(char));
-
-	// Copy path up to last '/'
-	strncpy(*parent, normal, len);
-	// Add null char
-	(*parent)[len] = '\0';
+	// Parent of "/x" is "/"
+	len     = walk == normal ? 1 : (size_t) (walk - normal);
+	*parent = ecalloc(len + 1, sizeof(char));
+	memcpy(*parent, normal, len);
 
 	free(normal);
 
@@ -94,66 +81,50 @@ int parentdir(const char *path, char **parent) {
 
 int mkdirp(const char *path) {
 	char *normal;
-	char *walk;
-	size_t normallen;
+	char *p;
+	char saved;
+	struct stat s;
+	int ret = 0;
 
 	normalizepath(path, &normal);
-	normallen = strlen(normal);
-	walk      = normal;
+	if (normal[0] == '\0') {
+		free(normal);
+		return 0;
+	}
 
-	while (walk < normal + normallen + 1) {
-		// Get length from walk to next /
-		size_t n = strcspn(walk, "/");
-
-		// Skip path /
-		if (n == 0) {
-			walk++;
+	// Create every path prefix ending before a '/' and finally the full path.
+	// Start at index 1 so that the root "/" is never created.
+	for (p = normal + 1;; p++) {
+		if (*p != '/' && *p != '\0')
 			continue;
-		}
 
-		// Length of current path segment
-		size_t curpathlen = walk - normal + n;
-		char curpath[curpathlen + 1];
-		struct stat s;
+		saved = *p;
+		*p    = '\0';
 
-		// Copy path segment to stat
-		strncpy(curpath, normal, curpathlen);
-		strcpy(curpath + curpathlen, "");
-		int res = stat(curpath, &s);
-
-		if (res < 0) {
-			if (errno == ENOENT) {
-				DEBUG("Making directory %s\n", curpath);
-				if (mkdir(curpath, 0700) < 0) {
-					fprintf(stderr, "Failed to make directory %s\n", curpath);
-					perror("");
-					free(normal);
-					return -1;
-				}
-			} else {
-				fprintf(stderr, "Error statting directory %s\n", curpath);
-				perror("");
-				free(normal);
-				return -1;
+		if (stat(normal, &s) == 0) {
+			if (!S_ISDIR(s.st_mode)) {
+				fprintf(stderr, "Not a directory: %s\n", normal);
+				ret = -1;
+			}
+		} else if (errno != ENOENT) {
+			fprintf(stderr, "Error statting directory %s: %s\n", normal,
+			        strerror(errno));
+			ret = -1;
+		} else {
+			DEBUG("Making directory %s\n", normal);
+			if (mkdir(normal, 0700) < 0 && errno != EEXIST) {
+				fprintf(stderr, "Failed to make directory %s: %s\n", normal,
+				        strerror(errno));
+				ret = -1;
 			}
 		}
 
-		// Continue to next path segment
-		walk += n;
+		*p = saved;
+		if (ret < 0 || saved == '\0')
+			break;
 	}
 
 	free(normal);
 
-	return 0;
-}
-
-int nullterminate(char **str, size_t *len) {
-	if ((*str)[*len - 1] == '\0')
-		return 0;
-
-	(*len)++;
-	*str             = (char *) realloc(*str, *len * sizeof(char));
-	(*str)[*len - 1] = '\0';
-
-	return 0;
+	return ret;
 }

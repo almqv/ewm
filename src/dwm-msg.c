@@ -10,19 +10,9 @@
 #include <sys/un.h>
 #include <unistd.h>
 #include <yajl/yajl_gen.h>
+#include <yajl/yajl_tree.h>
 
-#define IPC_MAGIC "DWM-IPC"
-// clang-format off
-#define IPC_MAGIC_ARR { 'D', 'W', 'M', '-', 'I', 'P', 'C' }
-// clang-format on
-#define IPC_MAGIC_LEN 7 // Not including null char
-
-#define IPC_EVENT_TAG_CHANGE           "tag_change_event"
-#define IPC_EVENT_CLIENT_FOCUS_CHANGE  "client_focus_change_event"
-#define IPC_EVENT_LAYOUT_CHANGE        "layout_change_event"
-#define IPC_EVENT_MONITOR_FOCUS_CHANGE "monitor_focus_change_event"
-#define IPC_EVENT_FOCUSED_TITLE_CHANGE "focused_title_change_event"
-#define IPC_EVENT_FOCUSED_STATE_CHANGE "focused_state_change_event"
+#include "ipc-protocol.h"
 
 #define YSTR(str)    yajl_gen_string(gen, (unsigned char *) str, strlen(str))
 #define YINT(num)    yajl_gen_integer(gen, num)
@@ -44,100 +34,38 @@
 
 typedef unsigned long Window;
 
-const char *DEFAULT_SOCKET_PATH  = "/tmp/dwm.sock";
 static int sock_fd               = -1;
 static unsigned int ignore_reply = 0;
 
-typedef enum IPCMessageType {
-	IPC_TYPE_RUN_COMMAND    = 0,
-	IPC_TYPE_GET_MONITORS   = 1,
-	IPC_TYPE_GET_TAGS       = 2,
-	IPC_TYPE_GET_LAYOUTS    = 3,
-	IPC_TYPE_GET_DWM_CLIENT = 4,
-	IPC_TYPE_SUBSCRIBE      = 5,
-	IPC_TYPE_EVENT          = 6
-} IPCMessageType;
+static void fatal(int status, const char *format, ...) {
+	va_list args;
 
-// Every IPC message must begin with this
-typedef struct dwm_ipc_header {
-	uint8_t magic[IPC_MAGIC_LEN];
-	uint32_t size;
-	uint8_t type;
-} __attribute((packed)) dwm_ipc_header_t;
+	fputs("ewm-msg: ", stderr);
+	va_start(args, format);
+	vfprintf(stderr, format, args);
+	va_end(args);
+	fputc('\n', stderr);
 
-static int recv_message(uint8_t *msg_type, uint32_t *reply_size,
-                        uint8_t **reply) {
-	uint32_t read_bytes   = 0;
-	const int32_t to_read = sizeof(dwm_ipc_header_t);
-	char header[to_read];
-	char *walk = header;
+	exit(status);
+}
 
-	// Try to read header
-	while (read_bytes < to_read) {
-		ssize_t n = read(sock_fd, header + read_bytes, to_read - read_bytes);
+/**
+ * Read exactly count bytes from the socket.
+ *
+ * Returns 0 on success, -1 on read error (errno is set), -2 on EOF
+ */
+static int read_all(void *buf, size_t count) {
+	size_t read_bytes = 0;
 
-		if (n == 0) {
-			if (read_bytes == 0) {
-				fprintf(stderr,
-				        "Unexpectedly reached EOF while reading header.");
-				fprintf(stderr,
-				        "Read %" PRIu32 " bytes, expected %" PRIu32
-				        " total bytes.\n",
-				        read_bytes, to_read);
-				return -2;
-			} else {
-				fprintf(stderr,
-				        "Unexpectedly reached EOF while reading header.");
-				fprintf(stderr,
-				        "Read %" PRIu32 " bytes, expected %" PRIu32
-				        " total bytes.\n",
-				        read_bytes, to_read);
-				return -3;
-			}
-		} else if (n == -1) {
-			return -1;
-		}
+	while (read_bytes < count) {
+		const ssize_t n =
+		    read(sock_fd, (uint8_t *) buf + read_bytes, count - read_bytes);
 
-		read_bytes += n;
-	}
-
-	// Check if magic string in header matches
-	if (memcmp(walk, IPC_MAGIC, IPC_MAGIC_LEN) != 0) {
-		fprintf(stderr, "Invalid magic string. Got '%.*s', expected '%s'\n",
-		        IPC_MAGIC_LEN, walk, IPC_MAGIC);
-		return -3;
-	}
-
-	walk += IPC_MAGIC_LEN;
-
-	// Extract reply size
-	memcpy(reply_size, walk, sizeof(uint32_t));
-	walk += sizeof(uint32_t);
-
-	// Extract message type
-	memcpy(msg_type, walk, sizeof(uint8_t));
-	walk += sizeof(uint8_t);
-
-	(*reply) = malloc(*reply_size);
-
-	// Extract payload
-	read_bytes = 0;
-	while (read_bytes < *reply_size) {
-		ssize_t n =
-		    read(sock_fd, *reply + read_bytes, *reply_size - read_bytes);
-
-		if (n == 0) {
-			fprintf(stderr,
-			        "Unexpectedly reached EOF while reading payload.");
-			fprintf(stderr,
-			        "Read %" PRIu32 " bytes, expected %" PRIu32 " bytes.\n",
-			        read_bytes, *reply_size);
-			free(*reply);
+		if (n == 0)
 			return -2;
-		} else if (n == -1) {
-			if (errno == EINTR || errno == EAGAIN)
+		if (n < 0) {
+			if (errno == EINTR)
 				continue;
-			free(*reply);
 			return -1;
 		}
 
@@ -147,163 +75,217 @@ static int recv_message(uint8_t *msg_type, uint32_t *reply_size,
 	return 0;
 }
 
-static int read_socket(IPCMessageType *msg_type, uint32_t *msg_size,
-                       char **msg) {
-	int ret = -1;
+/**
+ * Receive one message. The reply is NUL-terminated and must be freed.
+ * Exits if the message can't be received.
+ */
+static void read_socket(IPCMessageType *msg_type, uint32_t *msg_size,
+                        char **msg) {
+	dwm_ipc_header_t header;
+	int ret;
 
-	while (ret != 0) {
-		ret = recv_message((uint8_t *) msg_type, msg_size, (uint8_t **) msg);
+	if ((ret = read_all(&header, sizeof(header))) < 0)
+		goto fail;
 
-		if (ret < 0) {
-			// Try again (non-fatal error)
-			if (ret == -1 && (errno == EINTR || errno == EAGAIN))
-				continue;
+	if (memcmp(header.magic, IPC_MAGIC, IPC_MAGIC_LEN) != 0)
+		fatal(2, "invalid magic string in reply");
 
-			fprintf(stderr, "Error receiving response from socket. ");
-			fprintf(stderr, "The connection might have been lost.\n");
-			exit(2);
-		}
-	}
+	if (header.size > IPC_MAX_MESSAGE_SIZE)
+		fatal(2, "reply too long: %" PRIu32 " bytes, maximum is %d",
+		      (uint32_t) header.size, IPC_MAX_MESSAGE_SIZE);
 
-	return 0;
+	if (!(*msg = malloc(header.size + 1)))
+		fatal(2, "cannot allocate %" PRIu32 " bytes",
+		      (uint32_t) header.size + 1);
+
+	if ((ret = read_all(*msg, header.size)) < 0)
+		goto fail;
+
+	(*msg)[header.size] = '\0';
+	*msg_size           = header.size;
+	*msg_type           = header.type;
+
+	return;
+
+fail:
+	if (ret == -2)
+		fatal(2, "connection closed by ewm");
+	fatal(2, "error receiving response from socket: %s", strerror(errno));
 }
 
-static ssize_t write_socket(const void *buf, size_t count) {
+static void write_socket(const void *buf, size_t count) {
 	size_t written = 0;
 
 	while (written < count) {
-		const ssize_t n =
-		    write(sock_fd, ((uint8_t *) buf) + written, count - written);
+		const ssize_t n = send(sock_fd, (const uint8_t *) buf + written,
+		                       count - written, MSG_NOSIGNAL);
 
-		if (n == -1) {
-			if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR)
+		if (n < 0) {
+			if (errno == EINTR)
 				continue;
-			else
-				return n;
+			fatal(2, "error sending message: %s", strerror(errno));
 		}
 		written += n;
 	}
-	return written;
 }
 
-static void connect_to_socket() {
+static void connect_to_socket(const char *path) {
 	struct sockaddr_un addr;
-
-	int sock = socket(AF_UNIX, SOCK_STREAM, 0);
 
 	// Initialize struct to 0
 	memset(&addr, 0, sizeof(struct sockaddr_un));
-
 	addr.sun_family = AF_UNIX;
-	strcpy(addr.sun_path, DEFAULT_SOCKET_PATH);
 
-	connect(sock, (const struct sockaddr *) &addr,
-	        sizeof(struct sockaddr_un));
+	if (strlen(path) >= sizeof(addr.sun_path))
+		fatal(1, "socket path too long: %s", path);
+	strcpy(addr.sun_path, path);
 
-	sock_fd = sock;
+	if ((sock_fd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0)
+		fatal(1, "cannot create socket: %s", strerror(errno));
+
+	if (connect(sock_fd, (const struct sockaddr *) &addr,
+	            sizeof(struct sockaddr_un))
+	    < 0)
+		fatal(1, "cannot connect to %s: %s", path, strerror(errno));
 }
 
-static int send_message(IPCMessageType msg_type, uint32_t msg_size,
-                        uint8_t *msg) {
+static void send_message(IPCMessageType msg_type, size_t msg_size,
+                         const uint8_t *msg) {
+	if (msg_size > IPC_MAX_MESSAGE_SIZE)
+		fatal(1, "message too long: %zu bytes, maximum is %d", msg_size,
+		      IPC_MAX_MESSAGE_SIZE);
+
 	dwm_ipc_header_t header = {.magic = IPC_MAGIC_ARR,
 	                           .size  = msg_size,
 	                           .type  = msg_type};
 
-	size_t header_size = sizeof(dwm_ipc_header_t);
-	size_t total_size  = header_size + msg_size;
-
-	uint8_t buffer[total_size];
-
-	// Copy header to buffer
-	memcpy(buffer, &header, header_size);
-	// Copy message to buffer
-	memcpy(buffer + header_size, msg, header.size);
-
-	write_socket(buffer, total_size);
-
-	return 0;
+	write_socket(&header, sizeof(header));
+	write_socket(msg, msg_size);
 }
 
-static int is_float(const char *s) {
-	size_t len        = strlen(s);
-	int is_dot_used   = 0;
-	int is_minus_used = 0;
+/**
+ * Parse an optionally negative decimal integer.
+ *
+ * Returns 1 if s is one and fits in a long long, 0 otherwise
+ */
+static int parse_signed_int(const char *s, long long *num) {
+	const char *p = *s == '-' ? s + 1 : s;
 
-	// Floats can only have one decimal point in between or digits
-	// Optionally, floats can also be below zero (negative)
-	for (int i = 0; i < len; i++) {
-		if (isdigit(s[i]))
-			continue;
-		else if (!is_dot_used && s[i] == '.' && i != 0 && i != len - 1) {
-			is_dot_used = 1;
-			continue;
-		} else if (!is_minus_used && s[i] == '-' && i == 0) {
-			is_minus_used = 1;
-			continue;
-		} else
+	if (!*p)
+		return 0;
+	for (; *p; p++)
+		if (!isdigit((unsigned char) *p))
 			return 0;
-	}
 
-	return 1;
+	errno = 0;
+	*num  = strtoll(s, NULL, 10);
+
+	return errno != ERANGE;
 }
 
-static int is_unsigned_int(const char *s) {
-	size_t len = strlen(s);
+/**
+ * Parse a decimal unsigned integer.
+ *
+ * Returns 1 if s is one and fits in an unsigned long, 0 otherwise
+ */
+static int parse_unsigned_int(const char *s, unsigned long *num) {
+	if (!*s)
+		return 0;
+	for (const char *p = s; *p; p++)
+		if (!isdigit((unsigned char) *p))
+			return 0;
 
-	// Unsigned int can only have digits
-	for (int i = 0; i < len; i++) {
-		if (isdigit(s[i]))
+	errno = 0;
+	*num  = strtoul(s, NULL, 10);
+
+	return errno != ERANGE;
+}
+
+/**
+ * Parse a decimal number with an optional leading '-' and at most one '.'
+ * that is neither the first nor the last character.
+ *
+ * Returns 1 if s is one and fits in a double, 0 otherwise
+ */
+static int parse_float(const char *s, double *num) {
+	const size_t len = strlen(s);
+	int is_dot_used  = 0;
+	size_t digits    = 0;
+
+	for (size_t i = 0; i < len; i++) {
+		if (isdigit((unsigned char) s[i]))
+			digits++;
+		else if (!is_dot_used && s[i] == '.' && i != 0 && i != len - 1)
+			is_dot_used = 1;
+		else if (s[i] == '-' && i == 0)
 			continue;
 		else
 			return 0;
 	}
 
-	return 1;
+	if (!digits)
+		return 0;
+
+	errno = 0;
+	*num  = strtod(s, NULL);
+
+	return errno != ERANGE;
 }
 
-static int is_signed_int(const char *s) {
-	size_t len = strlen(s);
+/**
+ * Check whether a reply is an error reply: {"result": "error", ...}
+ */
+static int is_error_reply(const char *reply) {
+	const char *result_path[] = {"result", 0};
+	yajl_val tree             = yajl_tree_parse(reply, NULL, 0);
+	yajl_val result = yajl_tree_get(tree, result_path, yajl_t_string);
+	const char *res = YAJL_GET_STRING(result);
+	const int error = res && strcmp(res, "error") == 0;
 
-	// Signed int can only have digits and a negative sign at the start
-	for (int i = 0; i < len; i++) {
-		if (isdigit(s[i]))
-			continue;
-		else if (i == 0 && s[i] == '-') {
-			continue;
-		} else
-			return 0;
+	yajl_tree_free(tree);
+
+	return error;
+}
+
+/**
+ * Receive a reply and print it unless print is 0.
+ *
+ * Returns 1 if the reply is an error reply, 0 otherwise
+ */
+static int handle_socket_reply(int print) {
+	IPCMessageType reply_type;
+	uint32_t reply_size;
+	char *reply;
+	int error;
+
+	read_socket(&reply_type, &reply_size, &reply);
+
+	if (print) {
+		printf("%.*s\n", (int) reply_size, reply);
+		fflush(stdout);
 	}
+	error = is_error_reply(reply);
+	free(reply);
 
-	return 1;
+	return error;
 }
 
-static void flush_socket_reply() {
-	IPCMessageType reply_type;
-	uint32_t reply_size;
-	char *reply;
+static yajl_gen new_gen(void) {
+	yajl_gen gen = yajl_gen_alloc(NULL);
 
-	read_socket(&reply_type, &reply_size, &reply);
+	if (!gen)
+		fatal(1, "cannot allocate JSON generator");
 
-	free(reply);
-}
-
-static void print_socket_reply() {
-	IPCMessageType reply_type;
-	uint32_t reply_size;
-	char *reply;
-
-	read_socket(&reply_type, &reply_size, &reply);
-
-	printf("%.*s\n", reply_size, reply);
-	fflush(stdout);
-	free(reply);
+	return gen;
 }
 
 static int run_command(const char *name, char *args[], int argc) {
 	const unsigned char *msg;
 	size_t msg_size;
+	long long inum;
+	double fnum;
 
-	yajl_gen gen = yajl_gen_alloc(NULL);
+	yajl_gen gen = new_gen();
 
 	// Message format:
 	// {
@@ -315,12 +297,10 @@ static int run_command(const char *name, char *args[], int argc) {
     YSTR("command"); YSTR(name);
     YSTR("args"); YARR(
       for (int i = 0; i < argc; i++) {
-        if (is_signed_int(args[i])) {
-          long long num = atoll(args[i]);
-          YINT(num);
-        } else if (is_float(args[i])) {
-          float num = atof(args[i]);
-          YDOUBLE(num);
+        if (parse_signed_int(args[i], &inum)) {
+          YINT(inum);
+        } else if (parse_float(args[i], &fnum)) {
+          YDOUBLE(fnum);
         } else {
           YSTR(args[i]);
         }
@@ -331,34 +311,31 @@ static int run_command(const char *name, char *args[], int argc) {
 
 	yajl_gen_get_buf(gen, &msg, &msg_size);
 
-	send_message(IPC_TYPE_RUN_COMMAND, msg_size, (uint8_t *) msg);
+	send_message(IPC_TYPE_RUN_COMMAND, msg_size, msg);
 
-	if (!ignore_reply)
-		print_socket_reply();
-	else
-		flush_socket_reply();
+	handle_socket_reply(!ignore_reply);
 
 	yajl_gen_free(gen);
 
 	return 0;
 }
 
-static int get_monitors() {
-	send_message(IPC_TYPE_GET_MONITORS, 1, (uint8_t *) "");
-	print_socket_reply();
+static int get_monitors(void) {
+	send_message(IPC_TYPE_GET_MONITORS, 1, (const uint8_t *) "");
+	handle_socket_reply(1);
 	return 0;
 }
 
-static int get_tags() {
-	send_message(IPC_TYPE_GET_TAGS, 1, (uint8_t *) "");
-	print_socket_reply();
+static int get_tags(void) {
+	send_message(IPC_TYPE_GET_TAGS, 1, (const uint8_t *) "");
+	handle_socket_reply(1);
 
 	return 0;
 }
 
-static int get_layouts() {
-	send_message(IPC_TYPE_GET_LAYOUTS, 1, (uint8_t *) "");
-	print_socket_reply();
+static int get_layouts(void) {
+	send_message(IPC_TYPE_GET_LAYOUTS, 1, (const uint8_t *) "");
+	handle_socket_reply(1);
 
 	return 0;
 }
@@ -367,7 +344,7 @@ static int get_dwm_client(Window win) {
 	const unsigned char *msg;
 	size_t msg_size;
 
-	yajl_gen gen = yajl_gen_alloc(NULL);
+	yajl_gen gen = new_gen();
 
 	// Message format:
 	// {
@@ -381,20 +358,26 @@ static int get_dwm_client(Window win) {
 
 	yajl_gen_get_buf(gen, &msg, &msg_size);
 
-	send_message(IPC_TYPE_GET_DWM_CLIENT, msg_size, (uint8_t *) msg);
+	send_message(IPC_TYPE_GET_DWM_CLIENT, msg_size, msg);
 
-	print_socket_reply();
+	handle_socket_reply(1);
 
 	yajl_gen_free(gen);
 
 	return 0;
 }
 
+/**
+ * Subscribe to an event
+ *
+ * Returns 0 on success, -1 if ewm replied with an error
+ */
 static int subscribe(const char *event) {
 	const unsigned char *msg;
 	size_t msg_size;
+	int error;
 
-	yajl_gen gen = yajl_gen_alloc(NULL);
+	yajl_gen gen = new_gen();
 
 	// Message format:
 	// {
@@ -410,14 +393,16 @@ static int subscribe(const char *event) {
 
 	yajl_gen_get_buf(gen, &msg, &msg_size);
 
-	send_message(IPC_TYPE_SUBSCRIBE, msg_size, (uint8_t *) msg);
+	send_message(IPC_TYPE_SUBSCRIBE, msg_size, msg);
 
-	if (!ignore_reply)
-		print_socket_reply();
-	else
-		flush_socket_reply();
+	error = handle_socket_reply(!ignore_reply);
 
 	yajl_gen_free(gen);
+
+	if (error) {
+		fprintf(stderr, "ewm-msg: cannot subscribe to %s\n", event);
+		return -1;
+	}
 
 	return 0;
 }
@@ -428,7 +413,7 @@ static void usage_error(const char *prog_name, const char *format, ...) {
 
 	fprintf(stderr, "Error: ");
 	vfprintf(stderr, format, args);
-	fprintf(stderr, "\nusage: %s <command> [...]\n", prog_name);
+	fprintf(stderr, "\nusage: %s [options] <command> [...]\n", prog_name);
 	fprintf(stderr, "Try '%s help'\n", prog_name);
 
 	va_end(args);
@@ -447,19 +432,21 @@ static void print_usage(const char *name) {
 	puts("");
 	puts("  get_layouts                     Get list of layouts");
 	puts("");
-	puts("  get_dwm_client <window_id>      Get dwm client proprties");
+	puts("  get_dwm_client <window_id>      Get ewm client properties");
 	puts("");
 	puts("  subscribe [events...]           Subscribe to specified events");
-	puts("                                  Options: " IPC_EVENT_TAG_CHANGE
+	puts("                                  "
+	     "Options: " IPC_EVENT_NAME_TAG_CHANGE ",");
+	puts("                                  " IPC_EVENT_NAME_LAYOUT_CHANGE
 	     ",");
-	puts("                                  " IPC_EVENT_LAYOUT_CHANGE ",");
-	puts("                                  " IPC_EVENT_CLIENT_FOCUS_CHANGE
-	     ",");
-	puts("                                  " IPC_EVENT_MONITOR_FOCUS_CHANGE
-	     ",");
-	puts("                                  " IPC_EVENT_FOCUSED_TITLE_CHANGE
-	     ",");
-	puts("                                  " IPC_EVENT_FOCUSED_STATE_CHANGE);
+	puts("                                 "
+	     " " IPC_EVENT_NAME_CLIENT_FOCUS_CHANGE ",");
+	puts("                                 "
+	     " " IPC_EVENT_NAME_MONITOR_FOCUS_CHANGE ",");
+	puts("                                 "
+	     " " IPC_EVENT_NAME_FOCUSED_TITLE_CHANGE ",");
+	puts("                                 "
+	     " " IPC_EVENT_NAME_FOCUSED_STATE_CHANGE);
 	puts("");
 	puts("  help                            Display this message");
 	puts("");
@@ -467,65 +454,86 @@ static void print_usage(const char *name) {
 	puts("  --ignore-reply                  Don't print reply messages from");
 	puts("                                  run_command and subscribe.");
 	puts("");
+	puts("  --socket PATH                   Connect to the ewm socket at "
+	     "PATH.");
+	puts("                                  Default: $EWM_SOCKET, else");
+	puts("                                  "
+	     "$XDG_RUNTIME_DIR/ewm-<display>.sock,");
+	puts("                                  else "
+	     "/tmp/ewm-<uid>-<display>.sock");
+	puts("");
 }
 
 int main(int argc, char *argv[]) {
-	const char *prog_name = argv[0];
+	const char *prog_name   = argv[0];
+	const char *socket_path = NULL;
+	char default_path[sizeof(((struct sockaddr_un *) 0)->sun_path)];
+	unsigned long win = 0;
+	int i             = 1;
 
-	connect_to_socket();
-	if (sock_fd == -1) {
-		fprintf(stderr, "Failed to connect to socket\n");
-		return 1;
-	}
-
-	int i = 1;
-	if (i < argc && strcmp(argv[i], "--ignore-reply") == 0) {
-		ignore_reply = 1;
-		i++;
+	for (; i < argc && strncmp(argv[i], "--", 2) == 0; i++) {
+		if (strcmp(argv[i], "--ignore-reply") == 0)
+			ignore_reply = 1;
+		else if (strcmp(argv[i], "--socket") == 0) {
+			if (++i >= argc)
+				usage_error(prog_name, "Expected a path after --socket");
+			socket_path = argv[i];
+		} else
+			usage_error(prog_name, "Invalid option '%s'", argv[i]);
 	}
 
 	if (i >= argc)
 		usage_error(prog_name, "Expected an argument, got none");
 
-	if (strcmp(argv[i], "help") == 0)
+	const char *command = argv[i++];
+
+	// Validate arguments before connecting
+	if (strcmp(command, "help") == 0) {
 		print_usage(prog_name);
-	else if (strcmp(argv[i], "run_command") == 0) {
-		if (++i >= argc)
+		return 0;
+	} else if (strcmp(command, "run_command") == 0) {
+		if (i >= argc)
 			usage_error(prog_name, "No command specified");
-		// Command name
-		char *command = argv[i];
-		// Command arguments are everything after command name
-		char **command_args = argv + ++i;
-		// Number of command arguments
-		int command_argc = argc - i;
-		run_command(command, command_args, command_argc);
-	} else if (strcmp(argv[i], "get_monitors") == 0) {
-		get_monitors();
-	} else if (strcmp(argv[i], "get_tags") == 0) {
-		get_tags();
-	} else if (strcmp(argv[i], "get_layouts") == 0) {
-		get_layouts();
-	} else if (strcmp(argv[i], "get_dwm_client") == 0) {
-		if (++i < argc) {
-			if (is_unsigned_int(argv[i])) {
-				Window win = atol(argv[i]);
-				get_dwm_client(win);
-			} else
-				usage_error(prog_name, "Expected unsigned integer argument");
-		} else
+	} else if (strcmp(command, "get_dwm_client") == 0) {
+		if (i >= argc)
 			usage_error(prog_name, "Expected the window id");
-	} else if (strcmp(argv[i], "subscribe") == 0) {
-		if (++i < argc) {
-			for (int j = i; j < argc; j++)
-				subscribe(argv[j]);
-		} else
+		if (!parse_unsigned_int(argv[i], &win))
+			usage_error(prog_name, "Expected unsigned integer argument");
+	} else if (strcmp(command, "subscribe") == 0) {
+		if (i >= argc)
 			usage_error(prog_name, "Expected event name");
+	} else if (strcmp(command, "get_monitors") != 0
+	           && strcmp(command, "get_tags") != 0
+	           && strcmp(command, "get_layouts") != 0) {
+		usage_error(prog_name, "Invalid argument '%s'", command);
+	}
+
+	if (!socket_path) {
+		if (ipc_socket_path(default_path, sizeof(default_path)) < 0)
+			fatal(1, "default socket path is too long");
+		socket_path = default_path;
+	}
+	connect_to_socket(socket_path);
+
+	if (strcmp(command, "run_command") == 0) {
+		// Command arguments are everything after command name
+		run_command(argv[i], argv + i + 1, argc - i - 1);
+	} else if (strcmp(command, "get_monitors") == 0) {
+		get_monitors();
+	} else if (strcmp(command, "get_tags") == 0) {
+		get_tags();
+	} else if (strcmp(command, "get_layouts") == 0) {
+		get_layouts();
+	} else if (strcmp(command, "get_dwm_client") == 0) {
+		get_dwm_client(win);
+	} else if (strcmp(command, "subscribe") == 0) {
+		for (int j = i; j < argc; j++)
+			if (subscribe(argv[j]) < 0)
+				return 1;
 		// Keep listening for events forever
-		while (1) {
-			print_socket_reply();
-		}
-	} else
-		usage_error(prog_name, "Invalid argument '%s'", argv[i]);
+		while (1)
+			handle_socket_reply(1);
+	}
 
 	return 0;
 }

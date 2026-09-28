@@ -191,7 +191,7 @@ void drw_clr_create(Drw *drw, Clr *dest, const char *clrname) {
 	                       dest))
 		die("error, cannot allocate color '%s'", clrname);
 
-	dest->pixel |= 0xff << 24;
+	dest->pixel |= 0xffUL << 24;
 }
 
 /* Wrapper to create color schemes. The caller has to call free(3) on the
@@ -237,7 +237,7 @@ int drw_text(Drw *drw, int x, int y, unsigned int w, unsigned int h,
              unsigned int lpad, const char *text, int invert) {
 	char buf[1024];
 	int ty;
-	unsigned int ew;
+	unsigned int ew = 0;
 	XftDraw *d = NULL;
 	Fnt *usedfont, *curfont, *nextfont;
 	size_t i, len;

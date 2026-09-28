@@ -6,21 +6,13 @@
 #include "util.h"
 
 IPCClient *ipc_client_new(int fd) {
-	IPCClient *c = (IPCClient *) malloc(sizeof(IPCClient));
+	IPCClient *c = (IPCClient *) calloc(1, sizeof(IPCClient));
 
 	if (c == NULL)
 		return NULL;
 
-	// Initialize struct
-	memset(&c->event, 0, sizeof(struct epoll_event));
-
-	c->buffer_size   = 0;
-	c->buffer        = NULL;
 	c->fd            = fd;
 	c->event.data.fd = fd;
-	c->next          = NULL;
-	c->prev          = NULL;
-	c->subscriptions = 0;
 
 	return c;
 }
