@@ -1,11 +1,13 @@
 /* See LICENSE file for copyright and license details. */
 
 /* appearance */
-static const unsigned int borderpx = 1;  /* border pixel of windows */
-static const unsigned int gappx    = 5;  /* gaps between windows */
-static const unsigned int snap     = 32; /* snap pixel */
-static const int showbar           = 1;  /* 0 means no bar */
-static const int topbar            = 1;  /* 0 means bottom bar */
+static const unsigned int borderpx   = 1;  /* border pixel of windows */
+static const unsigned int gappx      = 5;  /* gaps between windows */
+static const unsigned int gapmodes[] = {5, 0}; /* gaps cycled by switchgaps */
+static const unsigned int snap       = 32; /* snap pixel */
+static const int showbar             = 1;  /* 0 means no bar */
+static const int topbar              = 1;  /* 0 means bottom bar */
+static const int barverticalpadding  = 2;  /* extra bar height in pixels */
 static const char *fonts[]     = {"monospace:size=10"};
 static const char dmenufont[]  = "monospace:size=10";
 static const char col_gray1[]  = "#222222";
@@ -120,6 +122,8 @@ static Key keys[] = {
     {MODKEY, XK_minus, setgaps, {.i = -1}},
     {MODKEY, XK_equal, setgaps, {.i = +1}},
     {MODKEY | ShiftMask, XK_equal, setgaps, {.i = 0}},
+    {MODKEY, XK_g, switchgaps, {.i = +1}},
+    {MODKEY | ShiftMask, XK_g, switchgaps, {.i = -1}},
     TAGKEYS(XK_1, 0) TAGKEYS(XK_2, 1) TAGKEYS(XK_3, 2) TAGKEYS(XK_4, 3)
         TAGKEYS(XK_5, 4) TAGKEYS(XK_6, 5) TAGKEYS(XK_7, 6) TAGKEYS(XK_8, 7)
             TAGKEYS(XK_9, 8){MODKEY | ShiftMask, XK_q, quit, {0}},
@@ -137,6 +141,8 @@ static Button buttons[] = {
     {ClkStatusText, 0, Button1, sigstatusbar, {.i = 1}},
     {ClkStatusText, 0, Button2, sigstatusbar, {.i = 2}},
     {ClkStatusText, 0, Button3, sigstatusbar, {.i = 3}},
+    {ClkStatusText, 0, Button4, sigstatusbar, {.i = 4}},
+    {ClkStatusText, 0, Button5, sigstatusbar, {.i = 5}},
     {ClkClientWin, MODKEY, Button1, movemouse, {0}},
     {ClkClientWin, MODKEY, Button2, togglefloating, {0}},
     {ClkClientWin, MODKEY, Button3, resizemouse, {0}},
@@ -152,7 +158,7 @@ static IPCCommand ipccommands[] = {
     IPCCOMMAND(toggleview, 1, {ARG_TYPE_UINT}),
     IPCCOMMAND(tag, 1, {ARG_TYPE_UINT}),
     IPCCOMMAND(toggletag, 1, {ARG_TYPE_UINT}),
-    IPCCOMMAND(tagmon, 1, {ARG_TYPE_UINT}),
+    IPCCOMMAND(tagmon, 1, {ARG_TYPE_SINT}),
     IPCCOMMAND(focusmon, 1, {ARG_TYPE_SINT}),
     IPCCOMMAND(focusstack, 1, {ARG_TYPE_SINT}),
     IPCCOMMAND(zoom, 1, {ARG_TYPE_NONE}),
