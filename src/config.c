@@ -65,6 +65,7 @@ static const Action actions[] = {
     {"movemouse", movemouse, ANone},
     {"quit", quit, ANone},
     {"reload", reload, ANone},
+    {"restart", restart, ANone},
     {"resizemouse", resizemouse, ANone},
     {"setgaps", setgaps, AInt},
     {"setlayout", setlayout, ALayout},
@@ -269,7 +270,7 @@ static void setfallbackbindings(Config *c) {
 	    {Mod4Mask, XK_space, setlayout, {0}},
 	    {Mod4Mask, XK_b, togglebar, {0}},
 	    {Mod4Mask | ShiftMask, XK_q, killclient, {0}},
-	    {Mod4Mask | ShiftMask, XK_r, reload, {0}},
+	    {Mod4Mask | ShiftMask, XK_r, restart, {0}},
 	    {Mod4Mask | ShiftMask, XK_e, quit, {0}},
 	};
 	const Button buttons[] = {
@@ -480,8 +481,9 @@ static int l_action(lua_State *l) {
 		arg.v = argv;
 		break;
 	}
-	if (a->func == reload && loadL)
-		return 0; /* reloading from config.lua itself would never end */
+	/* from config.lua itself these would never end */
+	if ((a->func == reload || a->func == restart) && loadL)
+		return 0;
 	a->func(&arg);
 	return 0;
 }
@@ -1272,7 +1274,7 @@ void config_fallback(const char *reason) {
 
 void config_start(void) {
 	Timer *t;
-	int i, n;
+	int i, n, restarted;
 
 	started = 1;
 	for (t = timers; t; t = t->next)
@@ -1281,7 +1283,9 @@ void config_start(void) {
 	rewatch();
 	if (errbuf[0])
 		setstatus(errbuf);
-	if (L) {
+	restarted = getenv("EWM_RESTARTED") != NULL;
+	unsetenv("EWM_RESTARTED"); /* not for our children */
+	if (L && !restarted) {
 		/* run ewm.autostart commands through ewm.spawn */
 		lua_getfield(L, LUA_REGISTRYINDEX, AUTOSTART);
 		n = luaL_len(L, -1);

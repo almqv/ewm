@@ -923,7 +923,11 @@ int ipc_init(const char *socket_path, const int p_epoll_fd,
 }
 
 void ipc_cleanup(void) {
-	// Free clients and their buffers
+	// Deliver pending replies (e.g. to the quit or restart command), then
+	// free clients and their buffers
+	for (IPCClient *c = ipc_clients; c; c = c->next)
+		if (!c->closing && c->buffer_size)
+			ipc_write_client(c);
 	while (ipc_clients)
 		ipc_drop_client(ipc_clients);
 

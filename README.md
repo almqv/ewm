@@ -13,6 +13,8 @@ Or with Nix: `nix profile install github:almqv/ewm`, or on NixOS import
 `nixosModules.default` and set `services.xserver.windowManager.ewm.enable = true`.
 
 Then pick "ewm" in your display manager, or put `exec ewm` in `~/.xinitrc`.
+To update, run the same command again: a running ewm restarts in place,
+keeping your windows.
 
 ## Configure
 

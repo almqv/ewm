@@ -66,6 +66,7 @@ struct Client {
 	Monitor *mon;
 	Window win;
 	ClientState prevstate;
+	unsigned int restoreidx; /* position before a restart, 0 if none */
 };
 
 /* key and button bindings either call a C action with arg, or, when func is
@@ -175,6 +176,7 @@ void moveresizeedge(const Arg *arg);
 void movemouse(const Arg *arg);
 void quit(const Arg *arg);
 void reload(const Arg *arg);
+void restart(const Arg *arg);
 void resizemouse(const Arg *arg);
 void setgaps(const Arg *arg);
 void setlayout(const Arg *arg);

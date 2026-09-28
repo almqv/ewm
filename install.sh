@@ -55,6 +55,12 @@ fi
 make -C "$src" PREFIX="$prefix"
 $sudo make -C "$src" install PREFIX="$prefix" XSESSIONDIR=/usr/share/xsessions
 
+# hotswap a running ewm (from a terminal inside the session)
+if "$prefix/bin/ewm-msg" run_command restart >/dev/null 2>&1; then
+	echo "ewm updated and restarted in place."
+	exit 0
+fi
+
 cat <<EOF
 
 ewm is installed in $prefix. Log out and pick "ewm" in your display manager,

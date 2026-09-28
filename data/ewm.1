@@ -52,7 +52,7 @@ compiled Lua modules
 included. When no configuration can be loaded ewm starts with built-in
 defaults: Mod4\-Return opens
 .B $TERMINAL
-(or xterm), Mod4\-[1..9] views tags, Mod4\-Shift\-r reloads and
+(or xterm), Mod4\-[1..9] views tags, Mod4\-Shift\-r restarts and
 Mod4\-Shift\-e quits.
 .P
 ewm watches these directories and reloads the configuration when a
@@ -181,8 +181,10 @@ the previous tags),
 .BR ewm.togglebar ,
 .BR ewm.movemouse ,
 .BR ewm.resizemouse ,
-.B ewm.reload
-and
+.BR ewm.reload ,
+.B ewm.restart
+(exec the installed ewm again in place: windows, tags, layouts and focus are
+kept, autostart does not run again) and
 .BR ewm.quit .
 .TP
 .BI ewm.autostart( cmd )
@@ -211,7 +213,7 @@ Print state as JSON.
 .B ewm-msg run_command \fIcommand \fR[\fIargs\fR]
 Run view, toggleview, tag, toggletag (tag masks), tagmon, focusmon,
 focusstack, incnmaster, zoom, killclient, togglefloating, setmfact,
-setlayoutsafe (a layout address from get_layouts), reload or quit.
+setlayoutsafe (a layout address from get_layouts), reload, restart or quit.
 .TP
 .B ewm-msg subscribe \fIevent\fR...
 Print tag_change_event, client_focus_change_event, layout_change_event,

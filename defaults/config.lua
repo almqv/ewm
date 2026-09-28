@@ -128,8 +128,9 @@ for i = 1, 9 do
 	key(mod .. "+Control+Shift", tostring(i), ewm.toggletag, i)
 end
 
--- session
-key(mod .. "+Shift", "r", ewm.reload)
+-- session; the config reloads on save, restart also picks up a newly
+-- installed ewm without closing any windows
+key(mod .. "+Shift", "r", ewm.restart)
 key(mod .. "+Shift", "e", ewm.quit)
 
 -- mouse; tag bar buttons without arguments receive the clicked tag

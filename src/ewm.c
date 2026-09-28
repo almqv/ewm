@@ -124,7 +124,11 @@ static void pop(Client *);
 static void propertynotify(XEvent *e);
 static Monitor *recttomon(int x, int y, int w, int h);
 static void resizeclient(Client *c, int x, int y, int w, int h);
+static void restoreclient(Client *c);
+static void restoremonitors(void);
+static void restoreorder(void);
 static void run(void);
+static void savestate(void);
 static void scan(void);
 static int sendevent(Client *c, Atom proto);
 static void sendmon(Client *c, Monitor *m);
@@ -181,7 +185,11 @@ static void (*handler[LASTEvent])(XEvent *) = {
 static Atom wmatom[WMLast], netatom[NetLast];
 static int dpy_fd;
 static int running = 1;
+static int restarting;    /* exec a new ewm once run() returns */
 static int reloadpending; /* reload once the current event is handled */
+/* windows focused on their monitor before a restart, refocused afterwards */
+static Window restoresel[32];
+static int nrestoresel;
 static Cur *cursor[CurLast];
 static Clr *scheme[SchemeLast];
 static Window wmcheckwin;
@@ -217,6 +225,7 @@ static IPCCommand ipccommands[] = {
     IPCCOMMAND(setmfact, 1, {ARG_TYPE_FLOAT}),
     IPCCOMMAND(setlayoutsafe, 1, {ARG_TYPE_PTR}),
     IPCCOMMAND(reload, 1, {ARG_TYPE_NONE}),
+    IPCCOMMAND(restart, 1, {ARG_TYPE_NONE}),
     IPCCOMMAND(quit, 1, {ARG_TYPE_NONE})};
 
 /* function implementations */
@@ -1028,6 +1037,7 @@ void manage(Window w, XWindowAttributes *wa) {
 		c->mon = selmon;
 		applyrules(c);
 	}
+	restoreclient(c);
 
 	c->bw = cfg.borderpx;
 	if (c->x + WIDTH(c) > c->mon->wx + c->mon->ww)
@@ -1376,8 +1386,180 @@ void quit(const Arg *arg) {
 	running = 0;
 }
 
+/* replace ewm with a fresh exec of its binary (e.g. after make install),
+ * keeping the X session, windows and their tags */
+void restart(const Arg *arg) {
+	restarting = 1;
+	running    = 0;
+}
+
 void reload(const Arg *arg) {
 	reloadpending = 1;
+}
+
+/* Restart state lives in X properties, which survive the exec: each client
+ * window gets _EWM_CLIENT, the root window _EWM_MONITORS. */
+enum { CliTags, CliMon, CliFloating, CliOrder, CliSel, CliLast };
+enum {
+	MonNum,
+	MonTags,
+	MonPrevTags,
+	MonLayout,
+	MonPrevLayout,
+	MonMfact, /* in 1/10000 */
+	MonNmaster,
+	MonGap,
+	MonBar,
+	MonLast
+};
+#define MAXMONS 32
+
+/* read and delete a CARDINAL[] property; returns the number of values */
+static unsigned long takecardinals(Window w, const char *name, long *out,
+                                   unsigned long max) {
+	Atom type;
+	int format;
+	unsigned long n, after;
+	unsigned char *p = NULL;
+
+	if (XGetWindowProperty(dpy, w, XInternAtom(dpy, name, False), 0, max,
+	                       True, XA_CARDINAL, &type, &format, &n, &after, &p)
+	        != Success
+	    || !p)
+		return 0;
+	if (type != XA_CARDINAL || format != 32)
+		n = 0;
+	memcpy(out, p, n * sizeof(long));
+	XFree(p);
+	return n;
+}
+
+void savestate(void) {
+	Atom clientatom = XInternAtom(dpy, "_EWM_CLIENT", False);
+	long mon[1 + MAXMONS * MonLast], cli[CliLast];
+	unsigned long n = 1, i;
+	Monitor *m;
+	Client *c;
+
+	mon[0] = selmon->num;
+	for (m = mons; m && n + MonLast <= LENGTH(mon); m = m->next) {
+		long *s = mon + n;
+
+		n += MonLast;
+		s[MonNum]        = m->num;
+		s[MonTags]       = m->tagset[m->seltags];
+		s[MonPrevTags]   = m->tagset[m->seltags ^ 1];
+		s[MonLayout]     = m->lt[m->sellt] - cfg.layouts;
+		s[MonPrevLayout] = m->lt[m->sellt ^ 1] - cfg.layouts;
+		s[MonMfact]      = m->mfact * 10000 + 0.5;
+		s[MonNmaster]    = m->nmaster;
+		s[MonGap]        = m->gappx;
+		s[MonBar]        = m->showbar;
+		for (i = 1, c = m->clients; c; c = c->next, i++) {
+			cli[CliTags]     = c->tags;
+			cli[CliMon]      = m->num;
+			cli[CliFloating] = c->isfullscreen ? c->oldstate : c->isfloating;
+			cli[CliOrder]    = i;
+			cli[CliSel]      = c == m->sel;
+			XChangeProperty(dpy, c->win, clientatom, XA_CARDINAL, 32,
+			                PropModeReplace, (unsigned char *) cli, CliLast);
+		}
+	}
+	XChangeProperty(dpy, root, XInternAtom(dpy, "_EWM_MONITORS", False),
+	                XA_CARDINAL, 32, PropModeReplace, (unsigned char *) mon, n);
+}
+
+static Monitor *numtomon(long num) {
+	Monitor *m;
+
+	for (m = mons; m && m->num != num; m = m->next)
+		;
+	return m;
+}
+
+/* views, layouts and bars as before a restart */
+void restoremonitors(void) {
+	long d[1 + MAXMONS * MonLast], *s;
+	unsigned long n = takecardinals(root, "_EWM_MONITORS", d, LENGTH(d)), i;
+	Monitor *m;
+	float f;
+
+	for (i = 1; i + MonLast <= n; i += MonLast) {
+		s = d + i;
+		if (!(m = numtomon(s[MonNum])))
+			continue; /* monitor went away */
+		m->seltags   = m->sellt = 0;
+		m->tagset[0] = s[MonTags] & TAGMASK ? s[MonTags] & TAGMASK : 1;
+		m->tagset[1] = s[MonPrevTags] & TAGMASK ? s[MonPrevTags] & TAGMASK : 1;
+		if (s[MonLayout] >= 0 && s[MonLayout] < (long) cfg.nlayouts)
+			m->lt[0] = &cfg.layouts[s[MonLayout]];
+		if (s[MonPrevLayout] >= 0 && s[MonPrevLayout] < (long) cfg.nlayouts)
+			m->lt[1] = &cfg.layouts[s[MonPrevLayout]];
+		snprintf(m->ltsymbol, sizeof m->ltsymbol, "%s", m->lt[0]->symbol);
+		if ((f = s[MonMfact] / 10000.0) >= 0.05 && f <= 0.95)
+			m->mfact = f;
+		m->nmaster = MAX(s[MonNmaster], 0);
+		m->gappx   = MAX(s[MonGap], 0);
+		m->gapidx  = gapindex(m->gappx);
+		if (m->showbar != !!s[MonBar]) {
+			m->showbar = !!s[MonBar];
+			updatebarpos(m);
+			XMoveResizeWindow(dpy, m->barwin, m->wx, m->by, m->ww, bh);
+		}
+	}
+	if (n > 0 && (m = numtomon(d[0])))
+		selmon = m;
+}
+
+/* tags, monitor and floating state of c as before a restart */
+void restoreclient(Client *c) {
+	long d[CliLast];
+	Monitor *m;
+
+	if (takecardinals(c->win, "_EWM_CLIENT", d, CliLast) != CliLast)
+		return;
+	if ((m = numtomon(d[CliMon])))
+		c->mon = m;
+	if (d[CliTags] & TAGMASK)
+		c->tags = d[CliTags] & TAGMASK;
+	c->isfloating = d[CliFloating] != 0;
+	c->restoreidx = d[CliOrder] > 0 ? d[CliOrder] : 0;
+	if (d[CliSel] && nrestoresel < (int) LENGTH(restoresel))
+		restoresel[nrestoresel++] = c->win;
+}
+
+static unsigned int restorerank(const Client *c) {
+	return c->restoreidx ? c->restoreidx : UINT_MAX;
+}
+
+/* client order and focus as before a restart, once scan() managed all */
+void restoreorder(void) {
+	Client *c, *next, *sorted, **p;
+	Monitor *m;
+	int i;
+
+	for (m = mons; m; m = m->next) {
+		for (sorted = NULL, c = m->clients; c; c = next) {
+			next = c->next;
+			for (p = &sorted; *p && restorerank(*p) <= restorerank(c);
+			     p = &(*p)->next)
+				;
+			c->next = *p;
+			*p      = c;
+		}
+		m->clients = sorted;
+		for (c = sorted; c; c = c->next)
+			c->restoreidx = 0;
+	}
+	for (i = 0; i < nrestoresel; i++)
+		if ((c = wintoclient(restoresel[i]))) {
+			detachstack(c);
+			attachstack(c);
+			c->mon->sel = c;
+		}
+	nrestoresel = 0;
+	arrange(NULL);
+	focus(NULL);
 }
 
 Monitor *recttomon(int x, int y, int w, int h) {
@@ -2440,11 +2622,23 @@ int main(int argc, char *argv[]) {
 	checkotherwm();
 	config_init();
 	setup();
+	restoremonitors();
 	scan();
+	restoreorder();
 	config_start();
 	run();
+	if (restarting)
+		savestate();
 	cleanup();
 	config_cleanup();
 	XCloseDisplay(dpy);
+	if (restarting) {
+		/* config.c skips autostart when it sees EWM_RESTARTED */
+		setenv("EWM_RESTARTED", "1", 1);
+		execvp(argv[0], argv);
+		fprintf(stderr, "ewm: cannot exec %s: %s\n", argv[0], strerror(errno));
+		execv("/proc/self/exe", argv); /* at least keep the session */
+		die("ewm: restart failed:");
+	}
 	return EXIT_SUCCESS;
 }
