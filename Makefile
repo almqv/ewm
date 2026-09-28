@@ -3,15 +3,25 @@
 
 VERSION = 2.0
 
-PREFIX     ?= /usr/local
-BINDIR     ?= $(PREFIX)/bin
-DATADIR    ?= $(PREFIX)/share
-MANDIR     ?= $(DATADIR)/man
-PKG_CONFIG ?= pkg-config
-# pkg-config name of Lua 5.4: lua5.4 (Debian, Nix), lua (Arch), lua54 (Fedora)
-LUA        ?= lua5.4
+PREFIX      ?= /usr/local
+BINDIR      ?= $(PREFIX)/bin
+DATADIR     ?= $(PREFIX)/share
+MANDIR      ?= $(DATADIR)/man
+# display managers look for sessions here; install.sh uses /usr/share/xsessions
+XSESSIONDIR ?= $(DATADIR)/xsessions
+PKG_CONFIG  ?= pkg-config
 # set to 0 to build without multi-monitor support
-XINERAMA   ?= 1
+XINERAMA    ?= 1
+
+# Lua >= 5.3; its pkg-config name differs between distributions
+LUA ?= $(firstword $(foreach p,lua5.4 lua-5.4 lua54 lua5.3 lua-5.3 lua53 lua, \
+         $(shell $(PKG_CONFIG) --atleast-version=5.3 $(p) 2>/dev/null && echo $(p))))
+LUA := $(LUA)
+ifeq ($(filter clean uninstall,$(MAKECMDGOALS)),)
+ifeq ($(LUA),)
+$(error Lua >= 5.3 development files not found; set LUA=<pkg-config name>)
+endif
+endif
 
 PKGS = x11 xft fontconfig yajl $(LUA)
 DEFS = -D_DEFAULT_SOURCE -D_POSIX_C_SOURCE=200809L \
@@ -54,18 +64,19 @@ $(BUILD)/ewm-msg: $(MSG_OBJ)
 install: all
 	install -Dm755 $(BUILD)/ewm $(DESTDIR)$(BINDIR)/ewm
 	install -Dm755 $(BUILD)/ewm-msg $(DESTDIR)$(BINDIR)/ewm-msg
-	install -Dm644 config.lua $(DESTDIR)$(DATADIR)/ewm/config.lua
-	install -Dm644 ewm.desktop $(DESTDIR)$(DATADIR)/xsessions/ewm.desktop
-	mkdir -p $(DESTDIR)$(MANDIR)/man1
-	sed "s/VERSION/$(VERSION)/g" ewm.1 > $(DESTDIR)$(MANDIR)/man1/ewm.1
-	chmod 644 $(DESTDIR)$(MANDIR)/man1/ewm.1
+	install -Dm644 defaults/config.lua $(DESTDIR)$(DATADIR)/ewm/config.lua
+	install -Dm644 -t $(DESTDIR)$(DATADIR)/ewm/examples examples/plugins/*.lua
+	mkdir -p $(DESTDIR)$(XSESSIONDIR) $(DESTDIR)$(MANDIR)/man1
+	sed "s|^Exec=.*|Exec=$(BINDIR)/ewm|" data/ewm.desktop \
+		> $(DESTDIR)$(XSESSIONDIR)/ewm.desktop
+	sed "s/VERSION/$(VERSION)/g" data/ewm.1 > $(DESTDIR)$(MANDIR)/man1/ewm.1
+	chmod 644 $(DESTDIR)$(XSESSIONDIR)/ewm.desktop $(DESTDIR)$(MANDIR)/man1/ewm.1
 
 uninstall:
 	rm -f $(DESTDIR)$(BINDIR)/ewm $(DESTDIR)$(BINDIR)/ewm-msg \
-	      $(DESTDIR)$(DATADIR)/ewm/config.lua \
-	      $(DESTDIR)$(DATADIR)/xsessions/ewm.desktop \
+	      $(DESTDIR)$(XSESSIONDIR)/ewm.desktop \
 	      $(DESTDIR)$(MANDIR)/man1/ewm.1
-	-rmdir $(DESTDIR)$(DATADIR)/ewm
+	rm -rf $(DESTDIR)$(DATADIR)/ewm
 
 clean:
 	rm -rf $(BUILD)
