@@ -3,6 +3,8 @@
 A tiling window manager for X, forked from [dwm](https://dwm.suckless.org/)
 and configured in Lua.
 
+![ewm desktop](preview.png)
+
 ## Install
 
 ```sh
